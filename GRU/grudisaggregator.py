@@ -22,12 +22,10 @@ from nilmtk.datastore import HDFDataStore
 
 class GRUDisaggregator(Disaggregator):
     '''Attempt to create a RNN Disaggregator
-
     Attributes
     ----------
     model : keras Sequential model
     mmax : the maximum value of the aggregate data
-
     MIN_CHUNK_LENGTH : int
        the minimum length of an acceptable chunk
     '''
@@ -42,7 +40,6 @@ class GRUDisaggregator(Disaggregator):
 
     def train(self, mains, meter, epochs=1, batch_size=128, **load_kwargs):
         '''Train
-
         Parameters
         ----------
         mains : a nilmtk.ElecMeter object for the aggregate data
@@ -75,7 +72,6 @@ class GRUDisaggregator(Disaggregator):
 
     def train_on_chunk(self, mainchunk, meterchunk, epochs, batch_size):
         '''Train using only one chunk
-
         Parameters
         ----------
         mainchunk : chunk of site meter
@@ -97,7 +93,6 @@ class GRUDisaggregator(Disaggregator):
 
     def train_across_buildings(self, mainlist, meterlist, epochs=1, batch_size=128, **load_kwargs):
         '''Train using data from multiple buildings
-
         Parameters
         ----------
         mainlist : a list of nilmtk.ElecMeter objects for the aggregate data of each building
@@ -149,7 +144,6 @@ class GRUDisaggregator(Disaggregator):
     def train_across_buildings_chunk(self, mainchunks, meterchunks, epochs, batch_size):
         '''Train using only one chunk of data. This chunk consists of data from
         all buildings.
-
         Parameters
         ----------
         mainchunk : chunk of site meter
@@ -205,7 +199,6 @@ class GRUDisaggregator(Disaggregator):
 
     def disaggregate(self, mains, output_datastore, meter_metadata, **load_kwargs):
         '''Disaggregate mains according to the model learnt previously.
-
         Parameters
         ----------
         mains : nilmtk.ElecMeter
@@ -266,7 +259,6 @@ class GRUDisaggregator(Disaggregator):
 
     def disaggregate_chunk(self, mains):
         '''In-memory disaggregation.
-
         Parameters
         ----------
         mains : pd.Series
@@ -294,11 +286,9 @@ class GRUDisaggregator(Disaggregator):
 
     def import_model(self, filename):
         '''Loads keras model from h5
-
         Parameters
         ----------
         filename : filename for .h5 file
-
         Returns: Keras model
         '''
         self.model = load_model(filename)
@@ -308,7 +298,6 @@ class GRUDisaggregator(Disaggregator):
 
     def export_model(self, filename):
         '''Saves keras model to h5
-
         Parameters
         ----------
         filename : filename for .h5 file
@@ -320,12 +309,10 @@ class GRUDisaggregator(Disaggregator):
 
     def _normalize(self, chunk, mmax):
         '''Normalizes timeseries
-
         Parameters
         ----------
         chunk : the timeseries to normalize
         max : max value of the powerseries
-
         Returns: Normalized timeseries
         '''
         tchunk = chunk / mmax
@@ -334,12 +321,10 @@ class GRUDisaggregator(Disaggregator):
     def _denormalize(self, chunk, mmax):
         '''Deormalizes timeseries
         Note: This is not entirely correct
-
         Parameters
         ----------
         chunk : the timeseries to denormalize
         max : max value used for normalization
-
         Returns: Denormalized timeseries
         '''
         tchunk = chunk * mmax

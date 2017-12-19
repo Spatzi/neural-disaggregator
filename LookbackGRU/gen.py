@@ -10,12 +10,10 @@ import os
 mmax = 5000 # Assumed maximum consumption value
 def opends(building, meter):
     '''Opens dataset of synthetic data from Neural NILM
-
     Parameters
     ----------
     building : The integer id of the building
     meter : The string key of the meter
-
     Returns: np.arrays of data in the following order: main data, meter data
     '''
     if not os.path.exists("dataset"):
@@ -47,7 +45,6 @@ def download_dataset():
 
 def gen_batch(mainchunk, meterchunk, batch_size, index,window_size):
     '''Generates batches from dataset
-
     Parameters
     ----------
     index : the index of the batch
