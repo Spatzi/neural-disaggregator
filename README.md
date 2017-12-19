@@ -11,3 +11,5 @@ The implemented models are:
 - Recurrent network with "lookback" (LookbackGRU). A variation of the GRU network in that uses a window of data as input.
 
 You can find examples on how to use each disaggregator and experiment [here](dasdadsa).
+
+** The experiments are conducted on a simulated dataset, which is not yet publicly available.
