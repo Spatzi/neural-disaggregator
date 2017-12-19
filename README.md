@@ -10,4 +10,4 @@ The implemented models are:
 - Recurrent network with GRU. A variation of the LSTM network in order to compare the two types of RNNs (see [example](https://github.com/OdysseasKr/neural-disaggregator/blob/master/GRU/GRU-example.ipynb))
 - Recurrent network with "lookback" (LookbackGRU). A variation of the GRU network in that uses a window of data as input.
 
-* The experiments are conducted on a simulated dataset, which is not yet publicly available.
+*The experiments are conducted on a simulated dataset, which is not yet publicly available.*
