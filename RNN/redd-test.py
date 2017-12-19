@@ -10,9 +10,11 @@ import metrics
 from rnndisaggregator import RNNDisaggregator
 
 print("========== OPEN DATASETS ============")
-train = DataSet('../../Datasets/REDD/redd.h5')
+# from nilmtk.dataset_converters import convert_redd
+# convert_redd('../data/REDD/low_freq', '../data/REDD/redd.csv', format='CSV')
+train = DataSet('../data/REDD/redd.csv', format='CSV')
 train.set_window(end="30-4-2011")
-test = DataSet('../../Datasets/REDD/redd.h5')
+test = DataSet('../data/REDD/redd.csv', format='CSV')
 test.set_window(start="30-4-2011")
 
 train_building = 1
