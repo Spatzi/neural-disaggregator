@@ -3,6 +3,7 @@ from warnings import warn, filterwarnings
 
 from matplotlib import rcParams
 import matplotlib.pyplot as plt
+import csv
 
 import random
 import sys
@@ -32,68 +33,93 @@ class RNNDisaggregator(Disaggregator):
        the minimum length of an acceptable chunk
     '''
 
-    def __init__(self):
+    def __init__(self, train_logfile, val_logfile):
         '''Initialize disaggregator
         '''
         self.MODEL_NAME = "LSTM"
         self.mmax = None
         self.MIN_CHUNK_LENGTH = 100
         self.model = self._create_model()
+        self.total_epochs = 0
+        self.train_logfile = train_logfile
+        self.val_logfile = val_logfile
 
-    def train(self, mains, meter, epochs=1, batch_size=128, **load_kwargs):
+        self.init_logfile(train_logfile)
+        self.init_logfile(val_logfile)
+
+    def train(self, train_mains, train_meter, validation_mains, validation_meter, epochs=1, batch_size=128, **load_kwargs):
         '''Train
 
         Parameters
         ----------
-        mains : a nilmtk.ElecMeter object for the aggregate data
-        meter : a nilmtk.ElecMeter object for the meter data
+        train_mains : a nilmtk.ElecMeter object for the aggregate data
+        train_meter : a nilmtk.ElecMeter object for the train_meter data
         epochs : number of epochs to train
         batch_size : size of batch used for training
-        **load_kwargs : keyword arguments passed to `meter.power_series()`
+        **load_kwargs : keyword arguments passed to `train_meter.power_series()`
         '''
 
-        main_power_series = mains.power_series(**load_kwargs)
-        meter_power_series = meter.power_series(**load_kwargs)
+        train_main_power_series = train_mains.power_series(**load_kwargs)
+        train_meter_power_series = train_meter.power_series(**load_kwargs)
+        val_main_power_series = validation_mains.power_series(**load_kwargs)
+        val_meter_power_series = validation_meter.power_series(**load_kwargs)
 
         # Train chunks
         run = True
-        mainchunk = next(main_power_series)
-        meterchunk = next(meter_power_series)
-        if self.mmax == None:
-            self.mmax = mainchunk.max()
+        train_mainchunk = next(train_main_power_series)
+        train_meterchunk = next(train_meter_power_series)
+        val_mainchunk = next(val_main_power_series)
+        val_meterchunk = next(val_meter_power_series)
+        if self.mmax is None:
+            self.mmax = train_mainchunk.max()
 
-        while(run):
-            mainchunk = self._normalize(mainchunk, self.mmax)
-            meterchunk = self._normalize(meterchunk, self.mmax)
+        while run:
+            train_mainchunk = self._normalize(train_mainchunk, self.mmax)
+            train_meterchunk = self._normalize(train_meterchunk, self.mmax)
+            val_mainchunk = self._normalize(val_mainchunk, self.mmax)
+            val_meterchunk = self._normalize(val_meterchunk, self.mmax)
 
-            self.train_on_chunk(mainchunk, meterchunk, epochs, batch_size)
+            self.train_on_chunk(train_mainchunk, train_meterchunk, val_mainchunk, val_meterchunk, epochs, batch_size)
             try:
-                mainchunk = next(main_power_series)
-                meterchunk = next(meter_power_series)
+                train_mainchunk = next(train_main_power_series)
+                train_meterchunk = next(train_meter_power_series)
+                val_mainchunk = next(val_main_power_series)
+                val_meterchunk = next(val_meter_power_series)
             except:
                 run = False
 
-    def train_on_chunk(self, mainchunk, meterchunk, epochs, batch_size):
+    def train_on_chunk(self, train_mainchunk, train_meterchunk, val_mainchunk, val_meterchunk, epochs, batch_size):
         '''Train using only one chunk
 
         Parameters
         ----------
-        mainchunk : chunk of site meter
-        meterchunk : chunk of appliance
+        train_mainchunk : chunk of site meter
+        train_meterchunk : chunk of appliance
         epochs : number of epochs for training
         batch_size : size of batch used for training
         '''
 
         # Replace NaNs with 0s
-        mainchunk.fillna(0, inplace=True)
-        meterchunk.fillna(0, inplace=True)
-        ix = mainchunk.index.intersection(meterchunk.index)
-        mainchunk = np.array(mainchunk[ix])
-        meterchunk = np.array(meterchunk[ix])
+        train_mainchunk.fillna(0, inplace=True)
+        train_meterchunk.fillna(0, inplace=True)
+        ix = train_mainchunk.index.intersection(train_meterchunk.index)
+        train_mainchunk = np.array(train_mainchunk[ix])
+        train_meterchunk = np.array(train_meterchunk[ix])
+        train_mainchunk = np.reshape(train_mainchunk, (train_mainchunk.shape[0], 1, 1))
 
-        mainchunk = np.reshape(mainchunk, (mainchunk.shape[0],1,1))
+        val_mainchunk.fillna(0, inplace=True)
+        val_meterchunk.fillna(0, inplace=True)
+        ix = val_mainchunk.index.intersection(val_meterchunk.index)
+        val_mainchunk = np.array(val_mainchunk[ix])
+        val_meterchunk = np.array(val_meterchunk[ix])
+        val_mainchunk = np.reshape(val_mainchunk, (val_mainchunk.shape[0], 1, 1))
 
-        self.model.fit(mainchunk, meterchunk, epochs=epochs, batch_size=batch_size, shuffle=True)
+        history = self.model.fit(train_mainchunk, train_meterchunk, epochs=epochs, batch_size=batch_size, shuffle=True)
+        self.update_logfile(self.train_logfile, history.history['loss'], self.total_epochs)
+        self.total_epochs += epochs
+
+        loss = self.model.evaluate(val_mainchunk, val_meterchunk, batch_size=batch_size)
+        self.update_logfile(self.val_logfile, [loss], self.total_epochs-1)
 
     def train_across_buildings(self, mainlist, meterlist, epochs=1, batch_size=128, **load_kwargs):
         '''Train using data from multiple buildings
@@ -126,12 +152,11 @@ class RNNDisaggregator(Disaggregator):
         for i in range(num_meters):
             mainchunks[i] = next(mainps[i])
             meterchunks[i] = next(meterps[i])
-        if self.mmax == None:
+        if self.mmax is None:
             self.mmax = max([m.max() for m in mainchunks])
 
-
         run = True
-        while(run):
+        while run:
             # Normalize and train
             mainchunks = [self._normalize(m, self.mmax) for m in mainchunks]
             meterchunks = [self._normalize(m, self.mmax) for m in meterchunks]
@@ -175,11 +200,12 @@ class RNNDisaggregator(Disaggregator):
 
         for e in range(epochs): # Iterate for every epoch
             print(e)
-            batch_indexes = range(min(num_of_batches))
+            loss = 0
+            batch_indexes = list(range(min(num_of_batches)))
             random.shuffle(batch_indexes)
 
             for bi, b in enumerate(batch_indexes): # Iterate for every batch
-                print("Batch {} of {}".format(bi,num_of_batches), end="\r")
+                print("Batch {} of {}".format(bi, min(num_of_batches)), end="\n")
                 sys.stdout.flush()
                 X_batch = np.empty((batch_size*num_meters, 1, 1))
                 Y_batch = np.empty((batch_size*num_meters, 1))
@@ -201,10 +227,13 @@ class RNNDisaggregator(Disaggregator):
                 X_batch, Y_batch = X_batch[p], Y_batch[p]
 
                 # Train model
-                self.model.train_on_batch(X_batch, Y_batch)
+                loss += self.model.train_on_batch(X_batch, Y_batch)
+            loss /= min(num_of_batches)
             print("\n")
+            with open(self.train_logfile, "a") as f:
+                f.write("{},{}\n".format(e, loss))
 
-    def disaggregate(self, mains, output_datastore, meter_metadata, **load_kwargs):
+    def disaggregate(self, mains, output_datastore, results_file, meter_metadata, **load_kwargs):
         '''Disaggregate mains according to the model learnt previously.
 
         Parameters
@@ -224,13 +253,21 @@ class RNNDisaggregator(Disaggregator):
 
         timeframes = []
         building_path = '/building{}'.format(mains.building())
-        mains_data_location = building_path + '/elec/meter1'
+
+        # ROTEM
+        # bugfix - it was considering meter1 by default.
+
+        mains_data_location = building_path + '/elec/meter%s' % str(mains.instance())
         data_is_available = False
 
         for chunk in mains.power_series(**load_kwargs):
             if len(chunk) < self.MIN_CHUNK_LENGTH:
                 continue
-            print("New sensible chunk: {}".format(len(chunk)))
+
+            line = "New sensible chunk: {}".format(len(chunk))
+            with open(results_file, "a") as text_file:
+                text_file.write(line + '\n')
+            print(line)
 
             timeframes.append(chunk.timeframe)
             measurement = chunk.name
@@ -366,3 +403,16 @@ class RNNDisaggregator(Disaggregator):
         plot_model(model, to_file='model.png', show_shapes=True)
 
         return model
+
+    @staticmethod
+    def init_logfile(logfile):
+        with open(logfile, "w") as csvfile:
+            writer = csv.writer(csvfile, delimiter=',')
+            writer.writerow(['epoch', 'loss'])
+
+    @staticmethod
+    def update_logfile(logfile, loss, last_index):
+        with open(logfile, "a") as csvfile:
+            writer = csv.writer(csvfile, delimiter=',')
+            for i, j in zip(range(last_index, last_index + len(loss)), loss):
+                writer.writerow([i, j])
