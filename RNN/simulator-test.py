@@ -1,14 +1,15 @@
 from __future__ import print_function, division
+
 import time
 import os
-from datetime import datetime
+import metrics
 
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 
+from datetime import datetime
 from nilmtk import DataSet, HDFDataStore
-import metrics
 from rnndisaggregator import RNNDisaggregator
 
 
@@ -30,6 +31,7 @@ validation_building = 1
 test_building = 1
 sample_period = 1
 meter_key = 'dish washer'
+
 train_elec = train.buildings[train_building].elec
 validation_elec = validation.buildings[validation_building].elec
 test_elec = test.buildings[test_building].elec
@@ -53,9 +55,9 @@ val_logfile = os.path.join(results_dir, 'validation.log')
 
 rnn = RNNDisaggregator(train_logfile, val_logfile)
 
-start = time.time()
 print("========== TRAIN ============")
 epochs = 0
+start = time.time()
 for i in range(2):
     rnn.train(train_mains, train_meter, validation_mains, validation_meter, epochs=2, sample_period=sample_period)
     epochs += 2
@@ -97,9 +99,9 @@ with open(results_file, "a") as text_file:
 for line in lines:
     print(line)
 
+# plots
 predicted = res_elec[meter_key]
 ground_truth = test_elec[meter_key]
-
 predicted.plot()
 ground_truth.plot()
 plt.savefig(os.path.join(results_dir, 'predicted_vs_ground_truth.png'))
@@ -109,12 +111,10 @@ training = pd.read_csv(train_logfile)
 epochs = np.array(training.as_matrix()[:,0], dtype='int')
 loss = np.array(training.as_matrix()[:,1], dtype='float32')
 plt.plot(epochs, loss, label='train')
-
 validation = pd.read_csv(val_logfile)
 epochs = np.array(validation.as_matrix()[:,0], dtype='int')
 loss = np.array(validation.as_matrix()[:,1], dtype='float32')
 plt.plot(epochs, loss, label='validation')
-
 plt.xlabel('epochs')
 plt.ylabel('loss')
 plt.legend()

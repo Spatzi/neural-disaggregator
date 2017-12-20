@@ -1,46 +1,45 @@
 from __future__ import print_function, division
-from warnings import warn, filterwarnings
 
-from matplotlib import rcParams
-import matplotlib.pyplot as plt
 import csv
-
 import random
 import sys
+import h5py
+
 import pandas as pd
 import numpy as np
-import h5py
 
 from keras.models import load_model
 from keras.models import Sequential
 from keras.layers import Dense, Conv1D, LSTM, Bidirectional, Dropout
 from keras.utils import plot_model
-
-from nilmtk.utils import find_nearest
-from nilmtk.feature_detectors import cluster
 from nilmtk.disaggregate import Disaggregator
-from nilmtk.datastore import HDFDataStore
+
 
 class RNNDisaggregator(Disaggregator):
-    '''Attempt to create a RNN Disaggregator
+    """
+    Attempt to create a RNN Disaggregator.
 
     Attributes
     ----------
-    model : keras Sequential model
-    mmax : the maximum value of the aggregate data
-
+    model : Keras Sequential model.
+    mmax : The maximum value of the aggregate data.
     MIN_CHUNK_LENGTH : int
-       the minimum length of an acceptable chunk
-    '''
+        The minimum length of an acceptable chunk.
+    """
 
     def __init__(self, train_logfile, val_logfile):
-        '''Initialize disaggregator
-        '''
+        """
+        Initialize disaggregator.
+
+        :param train_logfile: Training loss loggin.
+        :param val_logfile: Validation loss loggin.
+        """
+
         self.MODEL_NAME = "LSTM"
         self.mmax = None
         self.MIN_CHUNK_LENGTH = 100
         self.model = self._create_model()
-        self.total_epochs = 0
+        self.total_epochs = 0  # track total training epochs
         self.train_logfile = train_logfile
         self.val_logfile = val_logfile
 
@@ -48,23 +47,24 @@ class RNNDisaggregator(Disaggregator):
         self.init_logfile(val_logfile)
 
     def train(self, train_mains, train_meter, validation_mains, validation_meter, epochs=1, batch_size=128, **load_kwargs):
-        '''Train
+        """
+        Train model.
 
-        Parameters
-        ----------
-        train_mains : a nilmtk.ElecMeter object for the aggregate data
-        train_meter : a nilmtk.ElecMeter object for the train_meter data
-        epochs : number of epochs to train
-        batch_size : size of batch used for training
-        **load_kwargs : keyword arguments passed to `train_meter.power_series()`
-        '''
+        :param train_mains: nilmtk.ElecMeter object for the training aggregate data.
+        :param train_meter: nilmtk.ElecMeter object for the training meter data.
+        :param validation_mains: nilmtk.ElecMeter object for the validation aggregate data.
+        :param validation_meter: nilmtk.ElecMeter object for the validation meter data.
+        :param epochs: Number of epochs to train.
+        :param batch_size: Size of batch used for training.
+        :param load_kwargs: Keyword arguments passed to train_meter.power_series()
+        """
 
         train_main_power_series = train_mains.power_series(**load_kwargs)
         train_meter_power_series = train_meter.power_series(**load_kwargs)
         val_main_power_series = validation_mains.power_series(**load_kwargs)
         val_meter_power_series = validation_meter.power_series(**load_kwargs)
 
-        # Train chunks
+        # train chunks
         run = True
         train_mainchunk = next(train_main_power_series)
         train_meterchunk = next(train_meter_power_series)
@@ -89,17 +89,18 @@ class RNNDisaggregator(Disaggregator):
                 run = False
 
     def train_on_chunk(self, train_mainchunk, train_meterchunk, val_mainchunk, val_meterchunk, epochs, batch_size):
-        '''Train using only one chunk
+        """
+        Train using only one chunk.
 
-        Parameters
-        ----------
-        train_mainchunk : chunk of site meter
-        train_meterchunk : chunk of appliance
-        epochs : number of epochs for training
-        batch_size : size of batch used for training
-        '''
+        :param train_mainchunk: Training chunk of site meter.
+        :param train_meterchunk: Training chunk of appliance.
+        :param val_mainchunk: Validation chunk of site meter.
+        :param val_meterchunk: Validation chunk of appliance.
+        :param epochs: Number of epochs to train.
+        :param batch_size: Size of batch used for training.
+        """
 
-        # Replace NaNs with 0s
+        # replace NaNs with 0s
         train_mainchunk.fillna(0, inplace=True)
         train_meterchunk.fillna(0, inplace=True)
         ix = train_mainchunk.index.intersection(train_meterchunk.index)
@@ -123,16 +124,17 @@ class RNNDisaggregator(Disaggregator):
 
     def train_across_buildings(self, train_mainlist, train_meterlist, val_mainlist, val_meterlist, epochs=1,
                                batch_size=128, **load_kwargs):
-        '''Train using data from multiple train_buildings
+        """
+        Train using data from multiple buildings.
 
-        Parameters
-        ----------
-        train_mainlist : a list of nilmtk.ElecMeter objects for the aggregate data of each building
-        train_meterlist : a list of nilmtk.ElecMeter objects for the meter data of each building
-        batch_size : size of batch used for training
-        epochs : number of epochs to train
-        **load_kwargs : keyword arguments passed to `meter.power_series()`
-        '''
+        :param train_mainlist: List of nilmtk.ElecMeter objects for the training aggregate data of each building.
+        :param train_meterlist: List of nilmtk.ElecMeter objects for the training meter data of each building.
+        :param val_mainlist: List of nilmtk.ElecMeter objects for the validation aggregate data of each building.
+        :param val_meterlist: List of nilmtk.ElecMeter objects for the validation meter data of each building.
+        :param epochs: Number of epochs to train.
+        :param batch_size: Size of batch used for training.
+        :param load_kwargs: Keyword arguments passed to meter.power_series()
+        """
 
         assert(len(train_mainlist) == len(train_meterlist), "Number of train main and meter channels should be equal")
         assert(len(val_mainlist) == len(val_meterlist), "Number of validation main and meter channels should be equal")
@@ -148,7 +150,7 @@ class RNNDisaggregator(Disaggregator):
         val_mainchunks = [None] * val_num_meters
         val_meterchunks = [None] * val_num_meters
 
-        # Get generators of timeseries
+        # get generators of timeseries
         for i,m in enumerate(train_mainlist):
             train_mainps[i] = m.power_series(**load_kwargs)
 
@@ -161,7 +163,7 @@ class RNNDisaggregator(Disaggregator):
         for i,m in enumerate(val_meterlist):
             val_meterps[i] = m.power_series(**load_kwargs)
 
-        # Get a chunk of data
+        # get a chunk of data
         for i in range(train_num_meters):
             train_mainchunks[i] = next(train_mainps[i])
             train_meterchunks[i] = next(train_meterps[i])
@@ -173,7 +175,7 @@ class RNNDisaggregator(Disaggregator):
 
         run = True
         while run:
-            # Normalize and train
+            # normalize and train
             train_mainchunks = [self._normalize(m, self.mmax) for m in train_mainchunks]
             train_meterchunks = [self._normalize(m, self.mmax) for m in train_meterchunks]
             val_mainchunks = [self._normalize(m, self.mmax) for m in val_mainchunks]
@@ -182,7 +184,7 @@ class RNNDisaggregator(Disaggregator):
             self.train_across_buildings_chunk(train_mainchunks, train_meterchunks, val_mainchunks, val_meterchunks,
                                               epochs, batch_size)
 
-            # If more chunks, repeat
+            # if more chunks, repeat
             try:
                 for i in range(train_num_meters):
                     train_mainchunks[i] = next(train_mainps[i])
@@ -195,16 +197,16 @@ class RNNDisaggregator(Disaggregator):
 
     def train_across_buildings_chunk(self, train_mainchunks, train_meterchunks, val_mainchunks, val_meterchunks, epochs,
                                      batch_size):
-        '''Train using only one chunk of data. This chunk consists of data from
-        all train_buildings.
+        """
+        Train using only one chunk of data. This chunk consists of data from all buildings.
+        :param train_mainchunks: Training chunk of site meter.
+        :param train_meterchunks: Training chunk of appliance.
+        :param val_mainchunks: Validation chunk of site meter.
+        :param val_meterchunks: Validation chunk of appliance.
+        :param epochs: Number of epochs to train.
+        :param batch_size: Size of batch used for training.
+        """
 
-        Parameters
-        ----------
-        mainchunk : chunk of site meter
-        meterchunk : chunk of appliance
-        epochs : number of epochs for training
-        batch_size : size of batch used for training
-        '''
         train_num_meters = len(train_mainchunks)
         train_batch_size = int(batch_size / train_num_meters)
         train_num_of_batches = [None] * train_num_meters
@@ -213,7 +215,7 @@ class RNNDisaggregator(Disaggregator):
         val_batch_size = int(batch_size / val_num_meters)
         val_num_of_batches = [None] * val_num_meters
 
-        # Find common parts of timeseries
+        # find common parts of timeseries
         for i in range(train_num_meters):
             train_mainchunks[i].fillna(0, inplace=True)
             train_meterchunks[i].fillna(0, inplace=True)
@@ -236,19 +238,19 @@ class RNNDisaggregator(Disaggregator):
 
             val_num_of_batches[i] = int(len(ix) / val_batch_size) - 1
 
-        for e in range(epochs): # Iterate for every epoch
+        for e in range(epochs):  # iterate for every epoch
             print(e)
             train_loss = 0
             batch_indexes = list(range(min(train_num_of_batches)))
             random.shuffle(batch_indexes)
 
-            for bi, b in enumerate(batch_indexes): # Iterate for every batch
+            for bi, b in enumerate(batch_indexes):  # iterate for every batch
                 print("Batch {} of {}".format(bi, min(train_num_of_batches)), end="\n")
                 sys.stdout.flush()
                 X_batch = np.empty((train_batch_size * train_num_meters, 1, 1))
                 Y_batch = np.empty((train_batch_size * train_num_meters, 1))
 
-                # Create a batch out of data from all train_buildings
+                # create a batch out of data from all buildings
                 for i in range(train_num_meters):
                     mainpart = train_mainchunks[i]
                     meterpart = train_meterchunks[i]
@@ -260,11 +262,11 @@ class RNNDisaggregator(Disaggregator):
                     X_batch[i * train_batch_size:(i + 1) * train_batch_size] = np.array(X)
                     Y_batch[i * train_batch_size:(i + 1) * train_batch_size] = np.array(Y)
 
-                # Shuffle data
+                # shuffle data
                 p = np.random.permutation(len(X_batch))
                 X_batch, Y_batch = X_batch[p], Y_batch[p]
 
-                # Train model
+                # train model
                 train_loss += self.model.train_on_batch(X_batch, Y_batch)
             train_loss /= min(train_num_of_batches)
             print("\n")
@@ -274,13 +276,13 @@ class RNNDisaggregator(Disaggregator):
             batch_indexes = list(range(min(val_num_of_batches)))
             random.shuffle(batch_indexes)
 
-            for bi, b in enumerate(batch_indexes):  # Iterate for every batch
+            for bi, b in enumerate(batch_indexes):  # iterate for every batch
                 print("Batch {} of {}".format(bi, min(val_num_of_batches)), end="\n")
                 sys.stdout.flush()
                 X_batch = np.empty((val_batch_size * val_num_meters, 1, 1))
                 Y_batch = np.empty((val_batch_size * val_num_meters, 1))
 
-                # Create a batch out of data from all train_buildings
+                # create a batch out of data from all buildings
                 for i in range(val_num_meters):
                     mainpart = val_mainchunks[i]
                     meterpart = val_meterchunks[i]
@@ -292,11 +294,11 @@ class RNNDisaggregator(Disaggregator):
                     X_batch[i * val_batch_size:(i + 1) * val_batch_size] = np.array(X)
                     Y_batch[i * val_batch_size:(i + 1) * val_batch_size] = np.array(Y)
 
-                # Shuffle data
+                # shuffle data
                 p = np.random.permutation(len(X_batch))
                 X_batch, Y_batch = X_batch[p], Y_batch[p]
 
-                # Evaluate model
+                # evaluate model
                 val_loss += self.model.test_on_batch(X_batch, Y_batch)
             val_loss /= min(val_num_of_batches)
             print("\n")
@@ -305,17 +307,16 @@ class RNNDisaggregator(Disaggregator):
         self.total_epochs += epochs
 
     def disaggregate(self, mains, output_datastore, results_file, meter_metadata, **load_kwargs):
-        '''Disaggregate mains according to the model learnt previously.
+        """
+        Disaggregate mains according to the model learnt previously.
 
-        Parameters
-        ----------
-        mains : a nilmtk.ElecMeter of aggregate data
-        meter_metadata: a nilmtk.ElecMeter of the observed meter used for storing the metadata
-        output_datastore : instance of nilmtk.DataStore subclass
-            For storing power predictions from disaggregation algorithm.
-        **load_kwargs : key word arguments
-            Passed to `mains.power_series(**kwargs)`
-        '''
+        :param mains: nilmtk.ElecMeter of aggregate data.
+        :param output_datastore: Instance of nilmtk.DataStore subclass for storing power predictions from disaggregation
+            algorithm.
+        :param results_file: Output text file.
+        :param meter_metadata: nilmtk.ElecMeter of the observed meter used for storing the metadata.
+        :param load_kwargs: Keyword arguments passed to mains.power_series(**kwargs)
+        """
 
         load_kwargs = self._pre_disaggregation_checks(load_kwargs)
 
@@ -348,7 +349,7 @@ class RNNDisaggregator(Disaggregator):
             appliance_power[appliance_power < 0] = 0
             appliance_power = self._denormalize(appliance_power, self.mmax)
 
-            # Append prediction to output
+            # append prediction to output
             data_is_available = True
             cols = pd.MultiIndex.from_tuples([chunk.name])
             meter_instance = meter_metadata.instance()
@@ -358,11 +359,11 @@ class RNNDisaggregator(Disaggregator):
             key = '{}/elec/meter{}'.format(building_path, meter_instance)
             output_datastore.append(key, df)
 
-            # Append aggregate data to output
+            # append aggregate data to output
             mains_df = pd.DataFrame(chunk, columns=cols, dtype="float32")
             output_datastore.append(key=mains_data_location, value=mains_df)
 
-        # Save metadata to output
+        # save metadata to output
         if data_is_available:
             self._save_metadata_for_disaggregation(
                 output_datastore=output_datastore,
@@ -374,17 +375,14 @@ class RNNDisaggregator(Disaggregator):
             )
 
     def disaggregate_chunk(self, mains):
-        '''In-memory disaggregation.
+        """
+        In-memory disaggregation.
 
-        Parameters
-        ----------
-        mains : pd.Series of aggregate data
-        Returns
-        -------
-        appliance_powers : pd.DataFrame where each column represents a
-            disaggregated appliance.  Column names are the integer index
-            into `self.model` for the appliance in question.
-        '''
+        :param mains: pd.Series of aggregate data.
+        :return: appliance powers - pd.DataFrame where each column represents a disaggregated appliance. Column names
+            are the integer index into self.model for the appliance in question.
+        """
+
         up_limit = len(mains)
 
         mains.fillna(0, inplace=True)
@@ -402,67 +400,66 @@ class RNNDisaggregator(Disaggregator):
         return appliance_powers
 
     def import_model(self, filename):
-        '''Loads keras model from h5
+        """
+        Loads keras model from h5.
 
-        Parameters
-        ----------
-        filename : filename for .h5 file
+        :param filename: Filename for .h5 file.
+        :return: Keras model.
+        """
 
-        Returns: Keras model
-        '''
         self.model = load_model(filename)
         with h5py.File(filename, 'a') as hf:
             ds = hf.get('disaggregator-data').get('mmax')
             self.mmax = np.array(ds)[0]
 
     def export_model(self, filename):
-        '''Saves keras model to h5
+        """
+        Saves keras model to h5.
 
-        Parameters
-        ----------
-        filename : filename for .h5 file
-        '''
+        :param filename: Filename for .h5 file.
+        """
+
         self.model.save(filename)
         with h5py.File(filename, 'a') as hf:
             gr = hf.create_group('disaggregator-data')
             gr.create_dataset('mmax', data = [self.mmax])
 
     def _normalize(self, chunk, mmax):
-        '''Normalizes timeseries
+        """
+        Normalizes timeseries.
 
-        Parameters
-        ----------
-        chunk : the timeseries to normalize
-        max : max value of the powerseries
+        :param chunk: The timeseries to normalize.
+        :param mmax: Max value of the powerseries.
+        :return: Normalized timeseries.
+        """
 
-        Returns: Normalized timeseries
-        '''
         tchunk = chunk / mmax
         return tchunk
 
     def _denormalize(self, chunk, mmax):
-        '''Deormalizes timeseries
-        Note: This is not entirely correct
+        """
+        Deormalizes timeseries.
+        Note: This is not entirely correct.
 
-        Parameters
-        ----------
-        chunk : the timeseries to denormalize
-        max : max value used for normalization
+        :param chunk: The timeseries to denormalize.
+        :param mmax: Max value used for normalization.
+        :return: Denormalized timeseries.
+        """
 
-        Returns: Denormalized timeseries
-        '''
         tchunk = chunk * mmax
         return tchunk
 
     def _create_model(self):
-        '''Creates the RNN module described in the paper
-        '''
+        """
+        Creates the RNN module described in the paper.
+        """
+
         model = Sequential()
 
         # 1D Conv
         model.add(Conv1D(16, 4, activation="linear", input_shape=(1,1), padding="same", strides=1))
 
-        #Bi-directional LSTMs
+        # Bi-directional LSTMs
         model.add(Bidirectional(LSTM(128, return_sequences=True, stateful=False), merge_mode='concat'))
         model.add(Bidirectional(LSTM(256, return_sequences=False, stateful=False), merge_mode='concat'))
 
