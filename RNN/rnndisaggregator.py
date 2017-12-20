@@ -329,7 +329,11 @@ class RNNDisaggregator(Disaggregator):
         # ROTEM
         # bugfix - it was considering meter1 by default.
 
-        mains_data_location = building_path + '/elec/meter%s' % str(mains.instance())
+        main_meter = mains.instance()
+        if isinstance(main_meter, tuple):  # if a tuple pick the first item (for printing purposes only)
+            main_meter = main_meter[0]
+
+        mains_data_location = building_path + '/elec/meter%s' % str(main_meter)
         data_is_available = False
 
         for chunk in mains.power_series(**load_kwargs):
