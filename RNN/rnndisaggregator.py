@@ -15,6 +15,9 @@ from keras.utils import plot_model
 from nilmtk.disaggregate import Disaggregator
 
 
+SEQUENCE_LENGTH = 227
+
+
 class RNNDisaggregator(Disaggregator):
     """
     Attempt to create a RNN Disaggregator.
@@ -37,6 +40,7 @@ class RNNDisaggregator(Disaggregator):
 
         self.MODEL_NAME = "LSTM"
         self.mmax = None
+        self.rand_idx = None
         self.MIN_CHUNK_LENGTH = 100
         self.model = self._create_model()
         self.total_epochs = 0  # track total training epochs
@@ -71,14 +75,9 @@ class RNNDisaggregator(Disaggregator):
         val_mainchunk = next(val_main_power_series)
         val_meterchunk = next(val_meter_power_series)
         if self.mmax is None:
-            self.mmax = train_mainchunk.max()
+            self.mmax = train_meterchunk.max()
 
         while run:
-            train_mainchunk = self._normalize(train_mainchunk, self.mmax)
-            train_meterchunk = self._normalize(train_meterchunk, self.mmax)
-            val_mainchunk = self._normalize(val_mainchunk, self.mmax)
-            val_meterchunk = self._normalize(val_meterchunk, self.mmax)
-
             self.train_on_chunk(train_mainchunk, train_meterchunk, val_mainchunk, val_meterchunk, epochs, batch_size)
             try:
                 train_mainchunk = next(train_main_power_series)
@@ -100,21 +99,35 @@ class RNNDisaggregator(Disaggregator):
         :param batch_size: Size of batch used for training.
         """
 
-        # replace NaNs with 0s
-        train_mainchunk.fillna(0, inplace=True)
-        train_meterchunk.fillna(0, inplace=True)
+        """
+        Series lengths (for sample_period = 6):
+        --------------
+        kettle => 128
+        dish washer => 1536
+        fridge => 512
+        """
+
         ix = train_mainchunk.index.intersection(train_meterchunk.index)
         train_mainchunk = np.array(train_mainchunk[ix])
         train_meterchunk = np.array(train_meterchunk[ix])
-        train_mainchunk = np.reshape(train_mainchunk, (-1, 227, 1))  # TODO: shape should be detemined according to the target appliance
-        train_meterchunk = np.reshape(train_meterchunk, (-1, 227, 1))  # ValueError: Error when checking target: expected dense_2 to have 2 dimensions, but got array with shape (1614, 227, 1)
-        # train_meterchunk = np.reshape(train_meterchunk, (-1, 227)) # expects (None, 1) got (1614, 227)
+        # shape should be determined according to the target appliance
+        train_mainchunk = np.reshape(train_mainchunk, (-1, SEQUENCE_LENGTH, 1))
+        train_meterchunk = np.reshape(train_meterchunk, (-1, SEQUENCE_LENGTH, 1))
 
-        val_mainchunk.fillna(0, inplace=True)
-        val_meterchunk.fillna(0, inplace=True)
-        ix = val_mainchunk.index.intersection(val_meterchunk.index)
-        val_mainchunk = np.array(val_mainchunk[ix])
-        val_meterchunk = np.array(val_meterchunk[ix])
+        if self.rand_idx is None:
+            self.rand_idx = random.randint(0, train_mainchunk.shape[0]-1)
+
+        train_mainchunk = self._normalize(train_mainchunk)
+        train_meterchunk = self._normalize_targets(train_meterchunk)
+        # replace NaNs with 0s
+        train_mainchunk.fillna(0, inplace=True)
+        train_meterchunk.fillna(0, inplace=True)
+
+        # val_mainchunk.fillna(0, inplace=True)
+        # val_meterchunk.fillna(0, inplace=True)
+        # ix = val_mainchunk.index.intersection(val_meterchunk.index)
+        # val_mainchunk = np.array(val_mainchunk[ix])
+        # val_meterchunk = np.array(val_meterchunk[ix])
         # val_mainchunk = np.reshape(val_mainchunk, (-1, 200, 1))
         # val_meterchunk = np.reshape(val_meterchunk, (-1, 200))
 
@@ -126,7 +139,7 @@ class RNNDisaggregator(Disaggregator):
         # self.update_logfile(self.val_logfile, [loss], self.total_epochs-1)
 
     def train_across_buildings(self, train_mainlist, train_meterlist, val_mainlist, val_meterlist, epochs=1,
-                               batch_size=128, **load_kwargs):
+                               batch_size=16, **load_kwargs):
         """
         Train using data from multiple buildings.
 
@@ -350,11 +363,11 @@ class RNNDisaggregator(Disaggregator):
 
             timeframes.append(chunk.timeframe)
             measurement = chunk.name
-            chunk2 = self._normalize(chunk, self.mmax)
+            chunk2 = self._normalize(chunk)
 
             appliance_power = self.disaggregate_chunk(chunk2)
             appliance_power[appliance_power < 0] = 0
-            appliance_power = self._denormalize(appliance_power, self.mmax)
+            appliance_power = self._denormalize_targets(appliance_power)
 
             # append prediction to output
             data_is_available = True
@@ -390,15 +403,13 @@ class RNNDisaggregator(Disaggregator):
             are the integer index into self.model for the appliance in question.
         """
 
-        up_limit = len(mains)
-
         mains.fillna(0, inplace=True)
 
         X_batch = np.array(mains)
-        X_batch = np.reshape(X_batch, (X_batch.shape[0],1,1))
+        X_batch = np.reshape(X_batch, (-1, SEQUENCE_LENGTH, 1))
 
-        pred = self.model.predict(X_batch, batch_size=128)
-        pred = np.reshape(pred, (len(pred)))
+        pred = self.model.predict(X_batch, batch_size=16)
+        # pred = np.reshape(pred, (len(pred)))  # TODO: make sure is correct
         column = pd.Series(pred, index=mains.index[:len(X_batch)], name=0)
 
         appliance_powers_dict = {}
@@ -406,6 +417,7 @@ class RNNDisaggregator(Disaggregator):
         appliance_powers = pd.DataFrame(appliance_powers_dict)
         return appliance_powers
 
+    # TODO: update
     def import_model(self, filename):
         """
         Loads keras model from h5.
@@ -431,33 +443,46 @@ class RNNDisaggregator(Disaggregator):
             gr = hf.create_group('disaggregator-data')
             gr.create_dataset('mmax', data = [self.mmax])
 
-    # TODO: normalize like the paper
-    def _normalize(self, chunk, mmax):
+    def _normalize(self, chunk):
         """
-        Normalizes timeseries.
+        Normalizes timeseries. Each sequence is normalized to have zero mean and then divided by the std of a random
+        sample of the training set.
 
         :param chunk: The timeseries to normalize.
-        :param mmax: Max value of the powerseries.
         :return: Normalized timeseries.
         """
 
-        tchunk = chunk / mmax
+        mean = chunk.mean(axis=1)
+        chunk -= mean
+        std = chunk[self.rand_idx].std()
+        chunk /= std
+        return chunk
+
+    def _normalize_targets(self, chunk):
+        """
+        Normalizes the target power demand into the range [0,1].
+
+        :param chunk: The timeseries to normalize.
+        :return: Normalized timeseries.
+        """
+
+        tchunk = chunk / self.mmax
         return tchunk
 
-    def _denormalize(self, chunk, mmax):
+    def _denormalize_targets(self, chunk):
         """
-        Deormalizes timeseries.
+        Denormalizes the target power demand into their original range.
         Note: This is not entirely correct.
 
         :param chunk: The timeseries to denormalize.
-        :param mmax: Max value used for normalization.
         :return: Denormalized timeseries.
         """
 
-        tchunk = chunk * mmax
+        tchunk = chunk * self.mmax
         return tchunk
 
-    def _create_model(self):
+    @staticmethod
+    def _create_model():
         """
         Creates the RNN module described in the paper.
         """
