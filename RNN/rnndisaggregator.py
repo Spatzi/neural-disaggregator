@@ -10,7 +10,7 @@ import numpy as np
 
 from keras.models import load_model
 from keras.models import Sequential
-from keras.layers import Dense, Conv1D, LSTM, Bidirectional, Dropout
+from keras.layers import Dense, Conv1D, LSTM, Bidirectional, Dropout, Reshape, Flatten, TimeDistributed
 from keras.utils import plot_model
 from nilmtk.disaggregate import Disaggregator
 
@@ -46,7 +46,7 @@ class RNNDisaggregator(Disaggregator):
         self.init_logfile(train_logfile)
         self.init_logfile(val_logfile)
 
-    def train(self, train_mains, train_meter, validation_mains, validation_meter, epochs=1, batch_size=128, **load_kwargs):
+    def train(self, train_mains, train_meter, validation_mains, validation_meter, epochs=1, batch_size=16, **load_kwargs):
         """
         Train model.
 
@@ -106,21 +106,24 @@ class RNNDisaggregator(Disaggregator):
         ix = train_mainchunk.index.intersection(train_meterchunk.index)
         train_mainchunk = np.array(train_mainchunk[ix])
         train_meterchunk = np.array(train_meterchunk[ix])
-        train_mainchunk = np.reshape(train_mainchunk, (train_mainchunk.shape[0], 1, 1))
+        train_mainchunk = np.reshape(train_mainchunk, (-1, 227, 1))  # TODO: shape should be detemined according to the target appliance
+        train_meterchunk = np.reshape(train_meterchunk, (-1, 227, 1))  # ValueError: Error when checking target: expected dense_2 to have 2 dimensions, but got array with shape (1614, 227, 1)
+        # train_meterchunk = np.reshape(train_meterchunk, (-1, 227)) # expects (None, 1) got (1614, 227)
 
         val_mainchunk.fillna(0, inplace=True)
         val_meterchunk.fillna(0, inplace=True)
         ix = val_mainchunk.index.intersection(val_meterchunk.index)
         val_mainchunk = np.array(val_mainchunk[ix])
         val_meterchunk = np.array(val_meterchunk[ix])
-        val_mainchunk = np.reshape(val_mainchunk, (val_mainchunk.shape[0], 1, 1))
+        # val_mainchunk = np.reshape(val_mainchunk, (-1, 200, 1))
+        # val_meterchunk = np.reshape(val_meterchunk, (-1, 200))
 
         history = self.model.fit(train_mainchunk, train_meterchunk, epochs=epochs, batch_size=batch_size, shuffle=True)
         self.update_logfile(self.train_logfile, history.history['loss'], self.total_epochs)
         self.total_epochs += epochs
 
-        loss = self.model.evaluate(val_mainchunk, val_meterchunk, batch_size=batch_size)
-        self.update_logfile(self.val_logfile, [loss], self.total_epochs-1)
+        # loss = self.model.evaluate(val_mainchunk, val_meterchunk, batch_size=batch_size)
+        # self.update_logfile(self.val_logfile, [loss], self.total_epochs-1)
 
     def train_across_buildings(self, train_mainlist, train_meterlist, val_mainlist, val_meterlist, epochs=1,
                                batch_size=128, **load_kwargs):
@@ -428,6 +431,7 @@ class RNNDisaggregator(Disaggregator):
             gr = hf.create_group('disaggregator-data')
             gr.create_dataset('mmax', data = [self.mmax])
 
+    # TODO: normalize like the paper
     def _normalize(self, chunk, mmax):
         """
         Normalizes timeseries.
@@ -461,15 +465,15 @@ class RNNDisaggregator(Disaggregator):
         model = Sequential()
 
         # 1D Conv
-        model.add(Conv1D(16, 4, activation="linear", input_shape=(1,1), padding="same", strides=1))
+        model.add(Conv1D(16, 4, activation="linear", input_shape=(None,1), padding="same", strides=1))
 
         # Bi-directional LSTMs
         model.add(Bidirectional(LSTM(128, return_sequences=True, stateful=False), merge_mode='concat'))
-        model.add(Bidirectional(LSTM(256, return_sequences=False, stateful=False), merge_mode='concat'))
+        model.add(Bidirectional(LSTM(256, return_sequences=True, stateful=False), merge_mode='concat'))
 
         # Fully Connected Layers
-        model.add(Dense(128, activation='tanh'))
-        model.add(Dense(1, activation='linear'))
+        model.add(TimeDistributed(Dense(128, activation='tanh')))
+        model.add(TimeDistributed(Dense(1, activation='linear')))
 
         model.compile(loss='mse', optimizer='adam')
         plot_model(model, to_file='model.png', show_shapes=True)

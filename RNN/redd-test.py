@@ -54,7 +54,7 @@ rnn = RNNDisaggregator(train_logfile, val_logfile)
 print("========== TRAIN ============")
 epochs = 0
 start = time.time()
-for i in range(3):
+for i in range(20):
     rnn.train(train_mains, train_meter, validation_mains, validation_meter, epochs=5, sample_period=sample_period)
     epochs += 5
     rnn.export_model(os.path.join(results_dir, "REDD-RNN-h{}-{}-{}epochs.h5".format(train_building, meter_key, epochs)))
