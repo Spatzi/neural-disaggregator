@@ -10,12 +10,12 @@ import numpy as np
 
 from keras.models import load_model
 from keras.models import Sequential
-from keras.layers import Dense, Conv1D, LSTM, Bidirectional, Dropout, Reshape, Flatten, TimeDistributed
+from keras.layers import Dense, Conv1D, LSTM, Bidirectional, Dropout, TimeDistributed
 from keras.utils import plot_model
 from nilmtk.disaggregate import Disaggregator
 
 
-SEQUENCE_LENGTH = 227
+SEQUENCE_LENGTH = 128
 
 
 class RNNDisaggregator(Disaggregator):
@@ -40,7 +40,7 @@ class RNNDisaggregator(Disaggregator):
 
         self.MODEL_NAME = "LSTM"
         self.mmax = None
-        self.rand_idx = None
+        self.std = None
         self.MIN_CHUNK_LENGTH = 100
         self.model = self._create_model()
         self.total_epochs = 0  # track total training epochs
@@ -107,36 +107,53 @@ class RNNDisaggregator(Disaggregator):
         fridge => 512
         """
 
-        ix = train_mainchunk.index.intersection(train_meterchunk.index)
-        train_mainchunk = np.array(train_mainchunk[ix])
-        train_meterchunk = np.array(train_meterchunk[ix])
-        # shape should be determined according to the target appliance
-        train_mainchunk = np.reshape(train_mainchunk, (-1, SEQUENCE_LENGTH, 1))
-        train_meterchunk = np.reshape(train_meterchunk, (-1, SEQUENCE_LENGTH, 1))
-
-        if self.rand_idx is None:
-            self.rand_idx = random.randint(0, train_mainchunk.shape[0]-1)
-
-        train_mainchunk = self._normalize(train_mainchunk)
-        train_meterchunk = self._normalize_targets(train_meterchunk)
         # replace NaNs with 0s
         train_mainchunk.fillna(0, inplace=True)
         train_meterchunk.fillna(0, inplace=True)
+        ix = train_mainchunk.index.intersection(train_meterchunk.index)
+        train_mainchunk = np.array(train_mainchunk[ix])
+        train_meterchunk = np.array(train_meterchunk[ix])
 
-        # val_mainchunk.fillna(0, inplace=True)
-        # val_meterchunk.fillna(0, inplace=True)
-        # ix = val_mainchunk.index.intersection(val_meterchunk.index)
-        # val_mainchunk = np.array(val_mainchunk[ix])
-        # val_meterchunk = np.array(val_meterchunk[ix])
-        # val_mainchunk = np.reshape(val_mainchunk, (-1, 200, 1))
-        # val_meterchunk = np.reshape(val_meterchunk, (-1, 200))
+        # shape should be determined according to the target appliance
+        # truncate dataset if necessary
+        if train_mainchunk.shape[0] % SEQUENCE_LENGTH != 0:
+            length = int(train_mainchunk.shape[0] / SEQUENCE_LENGTH) * SEQUENCE_LENGTH
+            train_mainchunk = train_mainchunk[:length]
+            train_meterchunk = train_meterchunk[:length]
+        train_mainchunk = np.reshape(train_mainchunk, (-1, SEQUENCE_LENGTH, 1))
+        train_meterchunk = np.reshape(train_meterchunk, (-1, SEQUENCE_LENGTH, 1))
+
+        if self.std is None:
+            rand_idx = random.randint(0, train_mainchunk.shape[0]-1)
+            self.std = train_mainchunk[rand_idx].std()
+            while self.std == 0:
+                rand_idx = random.randint(0, train_mainchunk.shape[0]-1)
+                self.std = train_mainchunk[rand_idx].std()
+
+        train_mainchunk = self._normalize(train_mainchunk)
+        train_meterchunk = self._normalize_targets(train_meterchunk)
+
+        # replace NaNs with 0s
+        val_mainchunk.fillna(0, inplace=True)
+        val_meterchunk.fillna(0, inplace=True)
+        ix = val_mainchunk.index.intersection(val_meterchunk.index)
+        val_mainchunk = np.array(val_mainchunk[ix])
+        val_meterchunk = np.array(val_meterchunk[ix])
+
+        # truncate dataset if necessary
+        if val_mainchunk.shape[0] % SEQUENCE_LENGTH != 0:
+            length = int(val_mainchunk.shape[0] / SEQUENCE_LENGTH) * SEQUENCE_LENGTH
+            val_mainchunk = val_mainchunk[:length]
+            val_meterchunk = val_meterchunk[:length]
+        val_mainchunk = np.reshape(val_mainchunk, (-1, SEQUENCE_LENGTH, 1))
+        val_meterchunk = np.reshape(val_meterchunk, (-1, SEQUENCE_LENGTH, 1))
 
         history = self.model.fit(train_mainchunk, train_meterchunk, epochs=epochs, batch_size=batch_size, shuffle=True)
         self.update_logfile(self.train_logfile, history.history['loss'], self.total_epochs)
         self.total_epochs += epochs
 
-        # loss = self.model.evaluate(val_mainchunk, val_meterchunk, batch_size=batch_size)
-        # self.update_logfile(self.val_logfile, [loss], self.total_epochs-1)
+        loss = self.model.evaluate(val_mainchunk, val_meterchunk, batch_size=batch_size)
+        self.update_logfile(self.val_logfile, [loss], self.total_epochs-1)
 
     def train_across_buildings(self, train_mainlist, train_meterlist, val_mainlist, val_meterlist, epochs=1,
                                batch_size=16, **load_kwargs):
@@ -363,9 +380,8 @@ class RNNDisaggregator(Disaggregator):
 
             timeframes.append(chunk.timeframe)
             measurement = chunk.name
-            chunk2 = self._normalize(chunk)
 
-            appliance_power = self.disaggregate_chunk(chunk2)
+            appliance_power = self.disaggregate_chunk(chunk)
             appliance_power[appliance_power < 0] = 0
             appliance_power = self._denormalize_targets(appliance_power)
 
@@ -404,13 +420,16 @@ class RNNDisaggregator(Disaggregator):
         """
 
         mains.fillna(0, inplace=True)
-
         X_batch = np.array(mains)
+        if X_batch.shape[0] % SEQUENCE_LENGTH != 0:
+            length = int(X_batch.shape[0] / SEQUENCE_LENGTH) * SEQUENCE_LENGTH
+            X_batch = X_batch[:length]
         X_batch = np.reshape(X_batch, (-1, SEQUENCE_LENGTH, 1))
+        X_batch = self._normalize(X_batch)
 
         pred = self.model.predict(X_batch, batch_size=16)
-        # pred = np.reshape(pred, (len(pred)))  # TODO: make sure is correct
-        column = pd.Series(pred, index=mains.index[:len(X_batch)], name=0)
+        pred = np.reshape(pred, (pred.shape[0]*SEQUENCE_LENGTH))
+        column = pd.Series(pred, index=mains.index[:(X_batch.shape[0]*SEQUENCE_LENGTH)], name=0)
 
         appliance_powers_dict = {}
         appliance_powers_dict[0] = column
@@ -453,9 +472,9 @@ class RNNDisaggregator(Disaggregator):
         """
 
         mean = chunk.mean(axis=1)
+        mean = np.reshape(mean, (-1,1,1))
         chunk -= mean
-        std = chunk[self.rand_idx].std()
-        chunk /= std
+        chunk /= self.std
         return chunk
 
     def _normalize_targets(self, chunk):

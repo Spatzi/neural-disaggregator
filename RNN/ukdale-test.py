@@ -1,61 +1,96 @@
 from __future__ import print_function, division
+
 import time
+import os
 
-from matplotlib import rcParams
 import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
 
-from nilmtk import DataSet, TimeFrame, MeterGroup, HDFDataStore
+from datetime import datetime
+from nilmtk import DataSet, HDFDataStore
 from rnndisaggregator import RNNDisaggregator
-import metrics
+
 
 print("========== OPEN DATASETS ============")
-train = DataSet('../../Datasets/UKDALE/ukdale.h5')
-test = DataSet('../../Datasets/UKDALE/ukdale.h5')
-
-train.set_window(start="13-4-2013", end="1-1-2014")
-test.set_window(start="1-1-2014", end="30-3-2014")
+train = DataSet('../data/ukdale.h5')
+train.clear_cache()
+train.set_window(start="18-4-2013", end="14-5-2013")
+validation = DataSet('../data/ukdale.h5')
+validation.clear_cache()
+validation.set_window(start="14-5-2013", end="21-5-2013")
+test = DataSet('../data/ukdale.h5')
+test.clear_cache()
+test.set_window(start="21-5-2013", end="24-5-2013")
 
 train_building = 1
+validation_building = 1
 test_building = 1
 sample_period = 6
 meter_key = 'kettle'
+
 train_elec = train.buildings[train_building].elec
+validation_elec = validation.buildings[validation_building].elec
 test_elec = test.buildings[test_building].elec
 
 train_meter = train_elec.submeters()[meter_key]
+validation_meter = validation_elec.submeters()[meter_key]
+test_meter = test_elec.submeters()[meter_key]
+
 train_mains = train_elec.mains()
+validation_mains = validation_elec.mains()
 test_mains = test_elec.mains()
-rnn = RNNDisaggregator()
 
+results_dir = '../results/UKDALE-RNN-{}'.format(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+os.makedirs(results_dir)
+train_logfile = os.path.join(results_dir, 'training.log')
+val_logfile = os.path.join(results_dir, 'validation.log')
 
-start = time.time()
+rnn = RNNDisaggregator(train_logfile, val_logfile)
+
 print("========== TRAIN ============")
 epochs = 0
-for i in range(3):
+start = time.time()
+for i in range(1):
+    rnn.train(train_mains, train_meter, validation_mains, validation_meter, epochs=1, sample_period=sample_period)
+    epochs += 1
+    rnn.export_model(os.path.join(results_dir, "UKDALE-RNN-h{}-{}-{}epochs.h5".format(train_building, meter_key, epochs)))
     print("CHECKPOINT {}".format(epochs))
-    rnn.train(train_mains, train_meter, epochs=5, sample_period=sample_period)
-    epochs += 5
-    rnn.export_model("UKDALE-RNN-h{}-{}-{}epochs.h5".format(train_building,
-                                                        meter_key,
-                                                        epochs))
 end = time.time()
 print("Train =", end-start, "seconds.")
 
-
-print("========== DISAGGREGATE ============")
-disag_filename = "disag-out.h5"
-output = HDFDataStore(disag_filename, 'w')
-rnn.disaggregate(test_mains, output, train_meter, sample_period=sample_period)
+results_file = os.path.join(results_dir, 'results.txt')
+headline = "========== DISAGGREGATE ============"
+with open(results_file, "w") as text_file:
+    text_file.write(headline + '\n')
+print(headline)
+disag_filename = 'disag-out.h5'
+output = HDFDataStore(os.path.join(results_dir, disag_filename), 'w')
+rnn.disaggregate(test_mains, output, results_file, train_meter, sample_period=sample_period)
 output.close()
 
-print("========== RESULTS ============")
-result = DataSet(disag_filename)
+print("========== PLOTS ============")
+result = DataSet(os.path.join(results_dir, disag_filename))
 res_elec = result.buildings[test_building].elec
-rpaf = metrics.recall_precision_accuracy_f1(res_elec[meter_key], test_elec[meter_key])
-print("============ Recall: {}".format(rpaf[0]))
-print("============ Precision: {}".format(rpaf[1]))
-print("============ Accuracy: {}".format(rpaf[2]))
-print("============ F1 Score: {}".format(rpaf[2]))
 
-print("============ Relative error in total energy: {}".format(metrics.relative_error_total_energy(res_elec[meter_key], test_elec[meter_key])))
-print("============ Mean absolute error(in Watts): {}".format(metrics.mean_absolute_error(res_elec[meter_key], test_elec[meter_key])))
+# plots
+predicted = res_elec[meter_key]
+ground_truth = test_elec[meter_key]
+predicted.plot()
+ground_truth.plot()
+plt.savefig(os.path.join(results_dir, 'predicted_vs_ground_truth.png'))
+plt.close()
+
+training = pd.read_csv(train_logfile)
+epochs = np.array(training.as_matrix()[:,0], dtype='int')
+loss = np.array(training.as_matrix()[:,1], dtype='float32')
+plt.plot(epochs, loss, label='train')
+validation = pd.read_csv(val_logfile)
+epochs = np.array(validation.as_matrix()[:,0], dtype='int')
+loss = np.array(validation.as_matrix()[:,1], dtype='float32')
+plt.plot(epochs, loss, label='validation')
+plt.xlabel('epochs')
+plt.ylabel('loss')
+plt.legend()
+plt.savefig(os.path.join(results_dir, 'loss.png'))
+plt.close()
