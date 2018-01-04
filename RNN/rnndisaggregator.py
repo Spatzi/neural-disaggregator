@@ -2,7 +2,6 @@ from __future__ import print_function, division
 
 import csv
 import random
-import sys
 import h5py
 
 import pandas as pd
@@ -69,7 +68,6 @@ class RNNDisaggregator(Disaggregator):
         val_meter_power_series = validation_meter.power_series(**load_kwargs)
 
         # train chunks
-        run = True
         train_mainchunk = next(train_main_power_series)
         train_meterchunk = next(train_meter_power_series)
         val_mainchunk = next(val_main_power_series)
@@ -77,13 +75,16 @@ class RNNDisaggregator(Disaggregator):
         if self.mmax is None:
             self.mmax = train_meterchunk.max()
 
+        run = True
         while run:
             self.train_on_chunk(train_mainchunk, train_meterchunk, val_mainchunk, val_meterchunk, epochs, batch_size)
             try:
+                # TODO: make this right!
                 train_mainchunk = next(train_main_power_series)
                 train_meterchunk = next(train_meter_power_series)
                 val_mainchunk = next(val_main_power_series)
                 val_meterchunk = next(val_meter_power_series)
+                print('THERE ARE MORE CHUNKS')
             except:
                 run = False
 
@@ -148,6 +149,9 @@ class RNNDisaggregator(Disaggregator):
         val_mainchunk = np.reshape(val_mainchunk, (-1, SEQUENCE_LENGTH, 1))
         val_meterchunk = np.reshape(val_meterchunk, (-1, SEQUENCE_LENGTH, 1))
 
+        val_mainchunk = self._normalize(val_mainchunk)
+        val_meterchunk = self._normalize_targets(val_meterchunk)
+
         history = self.model.fit(train_mainchunk, train_meterchunk, epochs=epochs, batch_size=batch_size, shuffle=True)
         self.update_logfile(self.train_logfile, history.history['loss'], self.total_epochs)
         self.total_epochs += epochs
@@ -204,27 +208,23 @@ class RNNDisaggregator(Disaggregator):
             val_mainchunks[i] = next(val_mainps[i])
             val_meterchunks[i] = next(val_meterps[i])
         if self.mmax is None:
-            self.mmax = max([m.max() for m in train_mainchunks])
+            self.mmax = max([m.max() for m in train_meterchunks])
 
         run = True
         while run:
-            # normalize and train
-            train_mainchunks = [self._normalize(m, self.mmax) for m in train_mainchunks]
-            train_meterchunks = [self._normalize(m, self.mmax) for m in train_meterchunks]
-            val_mainchunks = [self._normalize(m, self.mmax) for m in val_mainchunks]
-            val_meterchunks = [self._normalize(m, self.mmax) for m in val_meterchunks]
-
+            # train
             self.train_across_buildings_chunk(train_mainchunks, train_meterchunks, val_mainchunks, val_meterchunks,
                                               epochs, batch_size)
 
-            # if more chunks, repeat
             try:
+                # TODO: make this right!
                 for i in range(train_num_meters):
                     train_mainchunks[i] = next(train_mainps[i])
                     train_meterchunks[i] = next(train_meterps[i])
                 for i in range(val_num_meters):
                     val_mainchunks[i] = next(val_mainps[i])
                     val_meterchunks[i] = next(val_meterps[i])
+                print('THERE ARE MORE CHUNKS')
             except:
                 run = False
 
@@ -241,24 +241,46 @@ class RNNDisaggregator(Disaggregator):
         """
 
         train_num_meters = len(train_mainchunks)
-        train_batch_size = int(batch_size / train_num_meters)
-        train_num_of_batches = [None] * train_num_meters
 
-        val_num_meters = len(val_mainchunks)
-        val_batch_size = int(batch_size / val_num_meters)
-        val_num_of_batches = [None] * val_num_meters
-
-        # find common parts of timeseries
         for i in range(train_num_meters):
+            # find common parts of timeseries
             train_mainchunks[i].fillna(0, inplace=True)
             train_meterchunks[i].fillna(0, inplace=True)
             ix = train_mainchunks[i].index.intersection(train_meterchunks[i].index)
             m1 = train_mainchunks[i]
             m2 = train_meterchunks[i]
-            train_mainchunks[i] = m1[ix]
-            train_meterchunks[i] = m2[ix]
+            train_mainchunks[i] = np.array(m1[ix])
+            train_meterchunks[i] = np.array(m2[ix])
 
-            train_num_of_batches[i] = int(len(ix) / train_batch_size) - 1
+            # shape should be determined according to the target appliance
+            # truncate dataset if necessary
+            if train_mainchunks[i].shape[0] % SEQUENCE_LENGTH != 0:
+                length = int(train_mainchunks[i].shape[0] / SEQUENCE_LENGTH) * SEQUENCE_LENGTH
+                train_mainchunks[i] = train_mainchunks[i][:length]
+                train_meterchunks[i] = train_meterchunks[i][:length]
+            train_mainchunks[i] = np.reshape(train_mainchunks[i], (-1, SEQUENCE_LENGTH, 1))
+            train_meterchunks[i] = np.reshape(train_meterchunks[i], (-1, SEQUENCE_LENGTH, 1))
+
+        all_train_mainchunks = np.concatenate([train_mainchunks[i] for i in range(train_num_meters)])
+        all_train_meterchunks = np.concatenate([train_meterchunks[i] for i in range(train_num_meters)])
+
+        seed = 1234
+        rng = np.random.RandomState(seed)
+        idx = range(all_train_mainchunks.shape[0])
+        idx = rng.choice(idx, len(idx), replace=False)
+        train_mainchunk, train_meterchunk = all_train_mainchunks[idx], all_train_meterchunks[idx]
+
+        if self.std is None:
+            rand_idx = random.randint(0, train_mainchunk.shape[0]-1)
+            self.std = train_mainchunk[rand_idx].std()
+            while self.std == 0:
+                rand_idx = random.randint(0, train_mainchunk.shape[0]-1)
+                self.std = train_mainchunk[rand_idx].std()
+
+        train_mainchunk = self._normalize(train_mainchunk)
+        train_meterchunk = self._normalize_targets(train_meterchunk)
+
+        val_num_meters = len(val_mainchunks)
 
         for i in range(val_num_meters):
             val_mainchunks[i].fillna(0, inplace=True)
@@ -266,78 +288,32 @@ class RNNDisaggregator(Disaggregator):
             ix = val_mainchunks[i].index.intersection(val_meterchunks[i].index)
             m1 = val_mainchunks[i]
             m2 = val_meterchunks[i]
-            val_mainchunks[i] = m1[ix]
-            val_meterchunks[i] = m2[ix]
+            val_mainchunks[i] = np.array(m1[ix])
+            val_meterchunks[i] = np.array(m2[ix])
 
-            val_num_of_batches[i] = int(len(ix) / val_batch_size) - 1
+            if val_mainchunks[i].shape[0] % SEQUENCE_LENGTH != 0:
+                length = int(val_mainchunks[i].shape[0] / SEQUENCE_LENGTH) * SEQUENCE_LENGTH
+                val_mainchunks[i] = val_mainchunks[i][:length]
+                val_meterchunks[i] = val_meterchunks[i][:length]
+            val_mainchunks[i] = np.reshape(val_mainchunks[i], (-1, SEQUENCE_LENGTH, 1))
+            val_meterchunks[i] = np.reshape(val_meterchunks[i], (-1, SEQUENCE_LENGTH, 1))
 
-        for e in range(epochs):  # iterate for every epoch
-            print(e)
-            train_loss = 0
-            batch_indexes = list(range(min(train_num_of_batches)))
-            random.shuffle(batch_indexes)
+        all_val_mainchunks = np.concatenate([val_mainchunks[i] for i in range(val_num_meters)])
+        all_val_meterchunks = np.concatenate([val_meterchunks[i] for i in range(val_num_meters)])
 
-            for bi, b in enumerate(batch_indexes):  # iterate for every batch
-                print("Batch {} of {}".format(bi, min(train_num_of_batches)), end="\n")
-                sys.stdout.flush()
-                X_batch = np.empty((train_batch_size * train_num_meters, 1, 1))
-                Y_batch = np.empty((train_batch_size * train_num_meters, 1))
+        idx = range(all_val_mainchunks.shape[0])
+        idx = rng.choice(idx, len(idx), replace=False)
+        val_mainchunk, val_meterchunk = all_val_mainchunks[idx], all_val_meterchunks[idx]
 
-                # create a batch out of data from all buildings
-                for i in range(train_num_meters):
-                    mainpart = train_mainchunks[i]
-                    meterpart = train_meterchunks[i]
-                    mainpart = mainpart[b * train_batch_size:(b + 1) * train_batch_size]
-                    meterpart = meterpart[b * train_batch_size:(b + 1) * train_batch_size]
-                    X = np.reshape(mainpart, (train_batch_size, 1, 1))
-                    Y = np.reshape(meterpart, (train_batch_size, 1))
+        val_mainchunk = self._normalize(val_mainchunk)
+        val_meterchunk = self._normalize_targets(val_meterchunk)
 
-                    X_batch[i * train_batch_size:(i + 1) * train_batch_size] = np.array(X)
-                    Y_batch[i * train_batch_size:(i + 1) * train_batch_size] = np.array(Y)
-
-                # shuffle data
-                p = np.random.permutation(len(X_batch))
-                X_batch, Y_batch = X_batch[p], Y_batch[p]
-
-                # train model
-                train_loss += self.model.train_on_batch(X_batch, Y_batch)
-            train_loss /= min(train_num_of_batches)
-            print("\n")
-            self.update_logfile(self.train_logfile, [train_loss], e+self.total_epochs)
-
-            val_loss = 0
-            batch_indexes = list(range(min(val_num_of_batches)))
-            random.shuffle(batch_indexes)
-
-            for bi, b in enumerate(batch_indexes):  # iterate for every batch
-                print("Batch {} of {}".format(bi, min(val_num_of_batches)), end="\n")
-                sys.stdout.flush()
-                X_batch = np.empty((val_batch_size * val_num_meters, 1, 1))
-                Y_batch = np.empty((val_batch_size * val_num_meters, 1))
-
-                # create a batch out of data from all buildings
-                for i in range(val_num_meters):
-                    mainpart = val_mainchunks[i]
-                    meterpart = val_meterchunks[i]
-                    mainpart = mainpart[b * val_batch_size:(b + 1) * val_batch_size]
-                    meterpart = meterpart[b * val_batch_size:(b + 1) * val_batch_size]
-                    X = np.reshape(mainpart, (val_batch_size, 1, 1))
-                    Y = np.reshape(meterpart, (val_batch_size, 1))
-
-                    X_batch[i * val_batch_size:(i + 1) * val_batch_size] = np.array(X)
-                    Y_batch[i * val_batch_size:(i + 1) * val_batch_size] = np.array(Y)
-
-                # shuffle data
-                p = np.random.permutation(len(X_batch))
-                X_batch, Y_batch = X_batch[p], Y_batch[p]
-
-                # evaluate model
-                val_loss += self.model.test_on_batch(X_batch, Y_batch)
-            val_loss /= min(val_num_of_batches)
-            print("\n")
-            self.update_logfile(self.val_logfile, [val_loss], e+self.total_epochs)
-
+        history = self.model.fit(train_mainchunk, train_meterchunk, epochs=epochs, batch_size=batch_size, shuffle=True)
+        self.update_logfile(self.train_logfile, history.history['loss'], self.total_epochs)
         self.total_epochs += epochs
+
+        loss = self.model.evaluate(val_mainchunk, val_meterchunk, batch_size=batch_size)
+        self.update_logfile(self.val_logfile, [loss], self.total_epochs - 1)
 
     def disaggregate(self, mains, output_datastore, results_file, meter_metadata, **load_kwargs):
         """
