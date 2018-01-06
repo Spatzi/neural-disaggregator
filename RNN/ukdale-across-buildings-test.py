@@ -20,7 +20,7 @@ validation.clear_cache()
 validation.set_window(start="14-5-2013", end="21-5-2013")
 test = DataSet('../data/ukdale.h5')
 test.clear_cache()
-test.set_window(start="21-5-2013", end="24-5-2013")
+test.set_window(start="21-5-2013", end="27-5-2013")
 
 train_mainslist = []
 train_meterlist = []
@@ -61,10 +61,10 @@ rnn = RNNDisaggregator(train_logfile, val_logfile)
 start = time.time()
 print("========== TRAIN ============")
 epochs = 0
-for i in range(1):
-    rnn.train_across_buildings(train_mainslist, train_meterlist, val_mainslist, val_meterlist, epochs=1,
+for i in range(20):
+    rnn.train_across_buildings(train_mainslist, train_meterlist, val_mainslist, val_meterlist, epochs=10,
                                sample_period=sample_period)
-    epochs += 1
+    epochs += 10
     rnn.export_model(os.path.join(results_dir, "UKDALE-RNN-h{}-{}-{}-{}epochs.h5".format(1, train_buildings, meter_key,
                                                                                          epochs)))
     print("CHECKPOINT {}".format(epochs))

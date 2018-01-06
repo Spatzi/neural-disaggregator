@@ -51,9 +51,9 @@ rnn = RNNDisaggregator(train_logfile, val_logfile)
 print("========== TRAIN ============")
 epochs = 0
 start = time.time()
-for i in range(20):
-    rnn.train(train_mains, train_meter, validation_mains, validation_meter, epochs=10, sample_period=sample_period)
-    epochs += 10
+for i in range(1):
+    rnn.train(train_mains, train_meter, validation_mains, validation_meter, epochs=1, sample_period=sample_period)
+    epochs += 1
     rnn.export_model(os.path.join(results_dir, "UKDALE-RNN-h{}-{}-{}epochs.h5".format(train_building, meter_key, epochs)))
     print("CHECKPOINT {}".format(epochs))
 end = time.time()

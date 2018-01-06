@@ -412,7 +412,6 @@ class RNNDisaggregator(Disaggregator):
         appliance_powers = pd.DataFrame(appliance_powers_dict)
         return appliance_powers
 
-    # TODO: update
     def import_model(self, filename):
         """
         Loads keras model from h5.
@@ -423,8 +422,13 @@ class RNNDisaggregator(Disaggregator):
 
         self.model = load_model(filename)
         with h5py.File(filename, 'a') as hf:
-            ds = hf.get('disaggregator-data').get('mmax')
-            self.mmax = np.array(ds)[0]
+            ds = hf.get('disaggregator-data')
+            mmax = ds.get('mmax')
+            self.mmax = np.array(mmax)[0]
+            std = ds.get('std')
+            self.std = np.array(std)[0]
+            total_epochs = ds.get('total_epochs')
+            self.total_epochs = np.array(total_epochs)[0]
 
     def export_model(self, filename):
         """
@@ -437,6 +441,8 @@ class RNNDisaggregator(Disaggregator):
         with h5py.File(filename, 'a') as hf:
             gr = hf.create_group('disaggregator-data')
             gr.create_dataset('mmax', data = [self.mmax])
+            gr.create_dataset('std', data=[self.std])
+            gr.create_dataset('total_epochs', data=[self.total_epochs])
 
     def _normalize(self, chunk):
         """
