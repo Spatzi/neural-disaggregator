@@ -23,31 +23,34 @@ class RNNDisaggregator(Disaggregator):
 
     Attributes
     ----------
-    model : Keras Sequential model.
-    mmax : The maximum value of the aggregate data.
-    MIN_CHUNK_LENGTH : int
-        The minimum length of an acceptable chunk.
+    model: Keras Sequential model.
+    mmax: The maximum value of the aggregate data.
+    std: The standard deviation of a random sequence sample to normalize the input.
+    MIN_CHUNK_LENGTH: The minimum length of an acceptable chunk.
+    total_epochs: total amount of updating steps so far.
     """
 
-    def __init__(self, train_logfile, val_logfile):
+    def __init__(self, train_logfile, val_logfile, init=True):
         """
         Initialize disaggregator.
 
         :param train_logfile: Training loss loggin.
         :param val_logfile: Validation loss loggin.
+        :param init: Whether to initialize the logfiles. Use False when before importing an existing model.
         """
 
         self.MODEL_NAME = "LSTM"
+        self.model = self._create_model()
         self.mmax = None
         self.std = None
         self.MIN_CHUNK_LENGTH = 100
-        self.model = self._create_model()
         self.total_epochs = 0  # track total training epochs
         self.train_logfile = train_logfile
         self.val_logfile = val_logfile
 
-        self.init_logfile(train_logfile)
-        self.init_logfile(val_logfile)
+        if init:
+            self.init_logfile(train_logfile)
+            self.init_logfile(val_logfile)
 
     def train(self, train_mains, train_meter, validation_mains, validation_meter, epochs=1, batch_size=16, **load_kwargs):
         """
