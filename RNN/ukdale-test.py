@@ -15,13 +15,13 @@ from rnndisaggregator import RNNDisaggregator
 print("========== OPEN DATASETS ============")
 train = DataSet('../data/ukdale.h5')
 train.clear_cache()
-train.set_window(start="18-4-2013", end="14-5-2013")
+train.set_window(start="13-4-2013", end="13-7-2013")
 validation = DataSet('../data/ukdale.h5')
 validation.clear_cache()
-validation.set_window(start="14-5-2013", end="21-5-2013")
+validation.set_window(start="13-7-2013", end="13-8-2013")
 test = DataSet('../data/ukdale.h5')
 test.clear_cache()
-test.set_window(start="21-5-2013", end="24-5-2013")
+test.set_window(start="13-8-2013", end="13-9-2013")
 
 train_building = 1
 validation_building = 1
@@ -51,7 +51,7 @@ rnn = RNNDisaggregator(train_logfile, val_logfile)
 print("========== TRAIN ============")
 epochs = 0
 start = time.time()
-for i in range(20):
+for i in range(10):
     rnn.train(train_mains, train_meter, validation_mains, validation_meter, epochs=10, sample_period=sample_period)
     epochs += 10
     rnn.export_model(os.path.join(results_dir, "UKDALE-RNN-h{}-{}-{}epochs.h5".format(train_building, meter_key, epochs)))
@@ -64,33 +64,45 @@ headline = "========== DISAGGREGATE ============"
 with open(results_file, "w") as text_file:
     text_file.write(headline + '\n')
 print(headline)
+
+# find best model (min validation loss)
+validation = pd.read_csv(val_logfile)
+epochs = np.array(validation.as_matrix()[:,0], dtype='int')
+loss = np.array(validation.as_matrix()[:,1], dtype='float32')
+argmin = np.argmin(loss)
+best_epoch = epochs[argmin] + 1
+rnn.import_model(os.path.join(results_dir, "UKDALE-RNN-h{}-{}-{}epochs.h5".format(train_building, meter_key, best_epoch)))
+test_loss = rnn.evaluate(test_mains, test_meter, sample_period=sample_period)
+line = 'Test loss: {}'.format(test_loss)
+with open(results_file, "a") as text_file:
+    text_file.write(line + '\n')
+print(line)
+
 disag_filename = 'disag-out.h5'
 output = HDFDataStore(os.path.join(results_dir, disag_filename), 'w')
 rnn.disaggregate(test_mains, output, results_file, train_meter, sample_period=sample_period)
 output.close()
 
 print("========== PLOTS ============")
+# plot train and validation loss
+plt.plot(epochs, loss, label='validation')
+training = pd.read_csv(train_logfile)
+epochs = np.array(training.as_matrix()[:,0], dtype='int')
+loss = np.array(training.as_matrix()[:,1], dtype='float32')
+plt.plot(epochs, loss, label='train')
+plt.title('Test loss: {}'.format(test_loss))
+plt.xlabel('epochs')
+plt.ylabel('loss')
+plt.legend()
+plt.savefig(os.path.join(results_dir, 'loss.png'))
+plt.close()
+
+# plot predicted energy consumption
 result = DataSet(os.path.join(results_dir, disag_filename))
 res_elec = result.buildings[test_building].elec
-
-# plots
 predicted = res_elec[meter_key]
 ground_truth = test_elec[meter_key]
 predicted.plot()
 ground_truth.plot()
 plt.savefig(os.path.join(results_dir, 'predicted_vs_ground_truth.png'))
-plt.close()
-
-training = pd.read_csv(train_logfile)
-epochs = np.array(training.as_matrix()[:,0], dtype='int')
-loss = np.array(training.as_matrix()[:,1], dtype='float32')
-plt.plot(epochs, loss, label='train')
-validation = pd.read_csv(val_logfile)
-epochs = np.array(validation.as_matrix()[:,0], dtype='int')
-loss = np.array(validation.as_matrix()[:,1], dtype='float32')
-plt.plot(epochs, loss, label='validation')
-plt.xlabel('epochs')
-plt.ylabel('loss')
-plt.legend()
-plt.savefig(os.path.join(results_dir, 'loss.png'))
 plt.close()

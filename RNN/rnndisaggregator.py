@@ -447,6 +447,53 @@ class RNNDisaggregator(Disaggregator):
             gr.create_dataset('std', data=[self.std])
             gr.create_dataset('total_epochs', data=[self.total_epochs])
 
+    def evaluate(self, test_mains, test_meter, batch_size=16, **load_kwargs):
+        """
+        Evaluate model.
+
+        :param test_mains: nilmtk.ElecMeter object for the test aggregate data.
+        :param test_meter: nilmtk.ElecMeter object for the test meter data.
+        :param batch_size: Size of batch used for evaluation.
+        :param load_kwargs: Keyword arguments passed to train_meter.power_series()
+        :return:
+        """
+
+        test_main_power_series = test_mains.power_series(**load_kwargs)
+        test_meter_power_series = test_meter.power_series(**load_kwargs)
+        test_mainchunk = next(test_main_power_series)
+        test_meterchunk = next(test_meter_power_series)
+
+        run = True
+        while run:
+            # replace NaNs with 0s
+            test_mainchunk.fillna(0, inplace=True)
+            test_meterchunk.fillna(0, inplace=True)
+            ix = test_mainchunk.index.intersection(test_meterchunk.index)
+            test_mainchunk = np.array(test_mainchunk[ix])
+            test_meterchunk = np.array(test_meterchunk[ix])
+
+            # truncate dataset if necessary
+            if test_mainchunk.shape[0] % SEQUENCE_LENGTH != 0:
+                length = int(test_mainchunk.shape[0] / SEQUENCE_LENGTH) * SEQUENCE_LENGTH
+                test_mainchunk = test_mainchunk[:length]
+                test_meterchunk = test_meterchunk[:length]
+            test_mainchunk = np.reshape(test_mainchunk, (-1, SEQUENCE_LENGTH, 1))
+            test_meterchunk = np.reshape(test_meterchunk, (-1, SEQUENCE_LENGTH, 1))
+
+            test_mainchunk = self._normalize(test_mainchunk)
+            test_meterchunk = self._normalize_targets(test_meterchunk)
+
+            loss = self.model.evaluate(test_mainchunk, test_meterchunk, batch_size=batch_size)
+            try:
+                # TODO: make this right!
+                test_mainchunk = next(test_main_power_series)
+                test_meterchunk = next(test_meter_power_series)
+                print('THERE ARE MORE CHUNKS')
+            except:
+                run = False
+
+        return loss
+
     def _normalize(self, chunk):
         """
         Normalizes timeseries. Each sequence is normalized to have zero mean and then divided by the std of a random
