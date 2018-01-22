@@ -14,24 +14,25 @@ from rnndisaggregator import RNNDisaggregator
 print("========== OPEN DATASETS ============")
 train = DataSet('../data/ukdale.h5')
 train.clear_cache()
-train.set_window(start="18-4-2013", end="14-5-2013")
+train.set_window(start="13-4-2013", end="13-5-2013")
 validation = DataSet('../data/ukdale.h5')
 validation.clear_cache()
-validation.set_window(start="14-5-2013", end="21-5-2013")
+validation.set_window(start="13-5-2013", end="13-6-2013")
 test = DataSet('../data/ukdale.h5')
 test.clear_cache()
-test.set_window(start="21-5-2013", end="27-5-2013")
+test.set_window(start="13-6-2013", end="30-6-2013")
 
 train_mainslist = []
 train_meterlist = []
 val_mainslist = []
 val_meterlist = []
-train_buildings = 2
+train_buildings = [1,2,4,5]
+val_buildings = [1,2,4,5]
 test_building = 1
 sample_period = 6
 meter_key = 'kettle'
 
-for i in range(1, train_buildings+1):
+for i in train_buildings:
     train_elec = train.buildings[i].elec
     train_meter = train_elec.submeters()[meter_key]
     train_mains = train_elec.mains()
@@ -39,7 +40,7 @@ for i in range(1, train_buildings+1):
     train_mainslist += [train_mains]
     train_meterlist += [train_meter]
 
-for i in range(1, train_buildings+1):
+for i in val_buildings:
     val_elec = validation.buildings[i].elec
     val_meter = val_elec.submeters()[meter_key]
     val_mains = val_elec.mains()
@@ -65,7 +66,9 @@ for i in range(20):
     rnn.train_across_buildings(train_mainslist, train_meterlist, val_mainslist, val_meterlist, epochs=10,
                                sample_period=sample_period)
     epochs += 10
-    rnn.export_model(os.path.join(results_dir, "UKDALE-RNN-h{}-{}-{}-{}epochs.h5".format(1, train_buildings, meter_key,
+    rnn.export_model(os.path.join(results_dir, "UKDALE-RNN-h{}-{}-{}-{}epochs.h5".format(min(train_buildings),
+                                                                                         max(train_buildings),
+                                                                                         meter_key,
                                                                                          epochs)))
     print("CHECKPOINT {}".format(epochs))
 end = time.time()
