@@ -211,7 +211,7 @@ class RNNDisaggregator(Disaggregator):
             val_mainchunks[i] = next(val_mainps[i])
             val_meterchunks[i] = next(val_meterps[i])
         if self.mmax is None:
-            self.mmax = max([m.max() for m in train_meterchunks])
+            self.mmax = max([m.max() for m in train_meterchunks]) # comment
 
         run = True
         while run:
