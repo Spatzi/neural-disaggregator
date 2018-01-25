@@ -41,24 +41,23 @@ train_mains = train_elec.mains()
 validation_mains = validation_elec.mains()
 test_mains = test_elec.mains()
 
-# results_dir = '../results/UKDALE-RNN-{}'.format(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-# os.makedirs(results_dir)
-results_dir = '../results/UKDALE-RNN-2018-01-25 20:51:26'
+results_dir = '../results/UKDALE-RNN-{}'.format(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+os.makedirs(results_dir)
 train_logfile = os.path.join(results_dir, 'training.log')
 val_logfile = os.path.join(results_dir, 'validation.log')
 
 rnn = RNNDisaggregator(train_logfile, val_logfile)
 
-# print("========== TRAIN ============")
-# epochs = 0
-# start = time.time()
-# for i in range(20):
-#     rnn.train(train_mains, train_meter, validation_mains, validation_meter, epochs=10, sample_period=sample_period)
-#     epochs += 10
-#     rnn.export_model(os.path.join(results_dir, "UKDALE-RNN-h{}-{}-{}epochs.h5".format(train_building, meter_key, epochs)))
-#     print("CHECKPOINT {}".format(epochs))
-# end = time.time()
-# print("Train =", end-start, "seconds.")
+print("========== TRAIN ============")
+epochs = 0
+start = time.time()
+for i in range(2):
+    rnn.train(train_mains, train_meter, validation_mains, validation_meter, epochs=10, sample_period=sample_period)
+    epochs += 10
+    rnn.export_model(os.path.join(results_dir, "UKDALE-RNN-h{}-{}-{}epochs.h5".format(train_building, meter_key, epochs)))
+    print("CHECKPOINT {}".format(epochs))
+end = time.time()
+print("Train =", end-start, "seconds.")
 
 results_file = os.path.join(results_dir, 'results.txt')
 headline = "========== DISAGGREGATE ============"
