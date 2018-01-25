@@ -15,13 +15,13 @@ from rnndisaggregator import RNNDisaggregator
 print("========== OPEN DATASETS ============")
 train = DataSet('../data/ukdale.h5')
 train.clear_cache()
-train.set_window(start="13-4-2013", end="20-8-2013")
+train.set_window(start="13-4-2013", end="31-7-2013")
 validation = DataSet('../data/ukdale.h5')
 validation.clear_cache()
-validation.set_window(start="20-8-2013", end="26-9-2013")
+validation.set_window(start="31-7-2013", end="31-8-2013")
 test = DataSet('../data/ukdale.h5')
 test.clear_cache()
-test.set_window(start="26-9-2013", end="13-10-2013")
+test.set_window(start="31-8-2013", end="13-9-2013")
 
 train_building = 1
 validation_building = 1
