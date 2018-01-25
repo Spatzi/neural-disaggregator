@@ -51,7 +51,7 @@ rnn = RNNDisaggregator(train_logfile, val_logfile)
 print("========== TRAIN ============")
 epochs = 0
 start = time.time()
-for i in range(2):
+for i in range(20):
     rnn.train(train_mains, train_meter, validation_mains, validation_meter, epochs=10, sample_period=sample_period)
     epochs += 10
     rnn.export_model(os.path.join(results_dir, "UKDALE-RNN-h{}-{}-{}epochs.h5".format(train_building, meter_key, epochs)))
@@ -110,5 +110,4 @@ ground_truth.plot(ax=ax3, plot_kwargs={'color': 'b', 'label': 'ground truth'}, p
 ax1.set_title('Appliance: {}'.format(meter_key))
 fig.legend()
 fig.savefig(os.path.join(results_dir, 'predicted_vs_ground_truth.png'))
-fig.close()
 

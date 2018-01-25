@@ -128,4 +128,3 @@ ground_truth.plot(ax=ax3, plot_kwargs={'color': 'b', 'label': 'ground truth'}, p
 ax1.set_title('Appliance: {}'.format(meter_key))
 fig.legend()
 fig.savefig(os.path.join(results_dir, 'predicted_vs_ground_truth.png'))
-fig.close()
