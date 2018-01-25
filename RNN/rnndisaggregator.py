@@ -52,7 +52,7 @@ class RNNDisaggregator(Disaggregator):
             self.init_logfile(train_logfile)
             self.init_logfile(val_logfile)
 
-    def train(self, train_mains, train_meter, validation_mains, validation_meter, epochs=1, batch_size=16, **load_kwargs):
+    def train(self, train_mains, train_meter, validation_mains, validation_meter, epochs=1, **load_kwargs):
         """
         Train model.
 
@@ -61,7 +61,6 @@ class RNNDisaggregator(Disaggregator):
         :param validation_mains: nilmtk.ElecMeter object for the validation aggregate data.
         :param validation_meter: nilmtk.ElecMeter object for the validation meter data.
         :param epochs: Number of epochs to train.
-        :param batch_size: Size of batch used for training.
         :param load_kwargs: Keyword arguments passed to train_meter.power_series()
         """
 
@@ -80,7 +79,7 @@ class RNNDisaggregator(Disaggregator):
 
         run = True
         while run:
-            self.train_on_chunk(train_mainchunk, train_meterchunk, val_mainchunk, val_meterchunk, epochs, batch_size)
+            self.train_on_chunk(train_mainchunk, train_meterchunk, val_mainchunk, val_meterchunk, epochs)
             try:
                 # TODO: make this right!
                 train_mainchunk = next(train_main_power_series)
@@ -91,7 +90,7 @@ class RNNDisaggregator(Disaggregator):
             except:
                 run = False
 
-    def train_on_chunk(self, train_mainchunk, train_meterchunk, val_mainchunk, val_meterchunk, epochs, batch_size):
+    def train_on_chunk(self, train_mainchunk, train_meterchunk, val_mainchunk, val_meterchunk, epochs):
         """
         Train using only one chunk.
 
@@ -100,7 +99,6 @@ class RNNDisaggregator(Disaggregator):
         :param val_mainchunk: Validation chunk of site meter.
         :param val_meterchunk: Validation chunk of appliance.
         :param epochs: Number of epochs to train.
-        :param batch_size: Size of batch used for training.
         """
 
         """
@@ -126,6 +124,8 @@ class RNNDisaggregator(Disaggregator):
             train_meterchunk = train_meterchunk[:length]
         train_mainchunk = np.reshape(train_mainchunk, (-1, SEQUENCE_LENGTH, 1))
         train_meterchunk = np.reshape(train_meterchunk, (-1, SEQUENCE_LENGTH, 1))
+
+        batch_size = int(train_mainchunk.shape[0] / 10)
 
         if self.std is None:
             rand_idx = random.randint(0, train_mainchunk.shape[0]-1)
@@ -163,7 +163,7 @@ class RNNDisaggregator(Disaggregator):
         self.update_logfile(self.val_logfile, [loss], self.total_epochs-1)
 
     def train_across_buildings(self, train_mainlist, train_meterlist, val_mainlist, val_meterlist, epochs=1,
-                               batch_size=16, **load_kwargs):
+                               **load_kwargs):
         """
         Train using data from multiple buildings.
 
@@ -172,7 +172,6 @@ class RNNDisaggregator(Disaggregator):
         :param val_mainlist: List of nilmtk.ElecMeter objects for the validation aggregate data of each building.
         :param val_meterlist: List of nilmtk.ElecMeter objects for the validation meter data of each building.
         :param epochs: Number of epochs to train.
-        :param batch_size: Size of batch used for training.
         :param load_kwargs: Keyword arguments passed to meter.power_series()
         """
 
@@ -217,7 +216,7 @@ class RNNDisaggregator(Disaggregator):
         while run:
             # train
             self.train_across_buildings_chunk(train_mainchunks, train_meterchunks, val_mainchunks, val_meterchunks,
-                                              epochs, batch_size)
+                                              epochs)
 
             try:
                 # TODO: make this right!
@@ -231,8 +230,7 @@ class RNNDisaggregator(Disaggregator):
             except:
                 run = False
 
-    def train_across_buildings_chunk(self, train_mainchunks, train_meterchunks, val_mainchunks, val_meterchunks, epochs,
-                                     batch_size):
+    def train_across_buildings_chunk(self, train_mainchunks, train_meterchunks, val_mainchunks, val_meterchunks, epochs):
         """
         Train using only one chunk of data. This chunk consists of data from all buildings.
         :param train_mainchunks: Training chunk of site meter.
@@ -240,7 +238,6 @@ class RNNDisaggregator(Disaggregator):
         :param val_mainchunks: Validation chunk of site meter.
         :param val_meterchunks: Validation chunk of appliance.
         :param epochs: Number of epochs to train.
-        :param batch_size: Size of batch used for training.
         """
 
         train_num_meters = len(train_mainchunks)
@@ -272,6 +269,8 @@ class RNNDisaggregator(Disaggregator):
         idx = range(all_train_mainchunks.shape[0])
         idx = rng.choice(idx, len(idx), replace=False)
         train_mainchunk, train_meterchunk = all_train_mainchunks[idx], all_train_meterchunks[idx]
+
+        batch_size = int(train_mainchunk.shape[0] / 10)
 
         if self.std is None:
             rand_idx = random.randint(0, train_mainchunk.shape[0]-1)
