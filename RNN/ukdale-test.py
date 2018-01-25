@@ -15,13 +15,13 @@ from rnndisaggregator import RNNDisaggregator
 print("========== OPEN DATASETS ============")
 train = DataSet('../data/ukdale.h5')
 train.clear_cache()
-train.set_window(start="13-4-2013", end="13-7-2013")
+train.set_window(start="13-4-2013", end="13-10-2013")
 validation = DataSet('../data/ukdale.h5')
 validation.clear_cache()
-validation.set_window(start="13-7-2013", end="13-8-2013")
+validation.set_window(start="13-10-2013", end="30-11-2013")
 test = DataSet('../data/ukdale.h5')
 test.clear_cache()
-test.set_window(start="13-8-2013", end="13-9-2013")
+test.set_window(start="30-11-2013", end="1-1-2014")
 
 train_building = 1
 validation_building = 1
@@ -51,7 +51,7 @@ rnn = RNNDisaggregator(train_logfile, val_logfile)
 print("========== TRAIN ============")
 epochs = 0
 start = time.time()
-for i in range(10):
+for i in range(20):
     rnn.train(train_mains, train_meter, validation_mains, validation_meter, epochs=10, sample_period=sample_period)
     epochs += 10
     rnn.export_model(os.path.join(results_dir, "UKDALE-RNN-h{}-{}-{}epochs.h5".format(train_building, meter_key, epochs)))
@@ -102,7 +102,13 @@ result = DataSet(os.path.join(results_dir, disag_filename))
 res_elec = result.buildings[test_building].elec
 predicted = res_elec[meter_key]
 ground_truth = test_elec[meter_key]
-predicted.plot()
-ground_truth.plot()
-plt.savefig(os.path.join(results_dir, 'predicted_vs_ground_truth.png'))
-plt.close()
+fig, (ax1, ax2, ax3) = plt.subplots(3, sharex=True, sharey=True)
+predicted.plot(ax=ax1, plot_kwargs={'color': 'r', 'label': 'predicted'})
+ground_truth.plot(ax=ax1, plot_kwargs={'color': 'b', 'label': 'ground truth'})
+predicted.plot(ax=ax2, plot_kwargs={'color': 'r', 'label': 'predicted'}, plot_legend=False)
+ground_truth.plot(ax=ax3, plot_kwargs={'color': 'b', 'label': 'ground truth'}, plot_legend=False)
+ax1.set_title('Appliance: {}'.format(meter_key))
+fig.legend()
+fig.savefig(os.path.join(results_dir, 'predicted_vs_ground_truth.png'))
+fig.close()
+

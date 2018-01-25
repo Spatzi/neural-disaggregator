@@ -79,33 +79,53 @@ headline = "========== DISAGGREGATE ============"
 with open(results_file, "w") as text_file:
     text_file.write(headline + '\n')
 print(headline)
+
+# find best model (min validation loss)
+validation = pd.read_csv(val_logfile)
+epochs = np.array(validation.as_matrix()[:,0], dtype='int')
+loss = np.array(validation.as_matrix()[:,1], dtype='float32')
+argmin = np.argmin(loss)
+best_epoch = epochs[argmin] + 1
+rnn.import_model(os.path.join(results_dir, "UKDALE-RNN-h{}-{}-{}-{}epochs.h5".format(min(train_buildings),
+                                                                                     max(train_buildings),
+                                                                                     meter_key,
+                                                                                     best_epoch)))
+test_loss = rnn.evaluate(test_mains, test_meter, sample_period=sample_period)
+line = 'Test loss: {}'.format(test_loss)
+with open(results_file, "a") as text_file:
+    text_file.write(line + '\n')
+print(line)
+
 disag_filename = 'disag-out.h5'
 output = HDFDataStore(os.path.join(results_dir, disag_filename), 'w')
 rnn.disaggregate(test_mains, output, results_file, train_meterlist[0], sample_period=sample_period)
 output.close()
 
 print("========== PLOTS ============")
-result = DataSet(os.path.join(results_dir, disag_filename))
-res_elec = result.buildings[test_building].elec
-
-# plots
-predicted = res_elec[meter_key]
-ground_truth = test_elec[meter_key]
-predicted.plot()
-ground_truth.plot()
-plt.savefig(os.path.join(results_dir, 'predicted_vs_ground_truth.png'))
-plt.close()
-
+# plot train and validation loss
+plt.plot(epochs, loss, label='validation')
 training = pd.read_csv(train_logfile)
 epochs = np.array(training.as_matrix()[:,0], dtype='int')
 loss = np.array(training.as_matrix()[:,1], dtype='float32')
 plt.plot(epochs, loss, label='train')
-validation = pd.read_csv(val_logfile)
-epochs = np.array(validation.as_matrix()[:,0], dtype='int')
-loss = np.array(validation.as_matrix()[:,1], dtype='float32')
-plt.plot(epochs, loss, label='validation')
+plt.title('Test loss: {}'.format(test_loss))
 plt.xlabel('epochs')
 plt.ylabel('loss')
 plt.legend()
 plt.savefig(os.path.join(results_dir, 'loss.png'))
 plt.close()
+
+# plot predicted energy consumption
+result = DataSet(os.path.join(results_dir, disag_filename))
+res_elec = result.buildings[test_building].elec
+predicted = res_elec[meter_key]
+ground_truth = test_elec[meter_key]
+fig, (ax1, ax2, ax3) = plt.subplots(3, sharex=True, sharey=True)
+predicted.plot(ax=ax1, plot_kwargs={'color': 'r', 'label': 'predicted'})
+ground_truth.plot(ax=ax1, plot_kwargs={'color': 'b', 'label': 'ground truth'})
+predicted.plot(ax=ax2, plot_kwargs={'color': 'r', 'label': 'predicted'}, plot_legend=False)
+ground_truth.plot(ax=ax3, plot_kwargs={'color': 'b', 'label': 'ground truth'}, plot_legend=False)
+ax1.set_title('Appliance: {}'.format(meter_key))
+fig.legend()
+fig.savefig(os.path.join(results_dir, 'predicted_vs_ground_truth.png'))
+fig.close()
