@@ -21,7 +21,7 @@ validation.clear_cache()
 validation.set_window(start="20-8-2013", end="26-9-2013")
 test = DataSet('../data/ukdale.h5')
 test.clear_cache()
-test.set_window(start="26-9-2013", end="13-10-2014")
+test.set_window(start="26-9-2013", end="13-10-2013")
 
 train_building = 1
 validation_building = 1
