@@ -551,7 +551,7 @@ class RNNDisaggregator(Disaggregator):
         model.add(TimeDistributed(Dense(128, activation='tanh')))
         model.add(TimeDistributed(Dense(1, activation='linear')))
 
-        adam = Adam(lr=1e-4, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
+        adam = Adam(lr=1e-4, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0)
         model.compile(loss='mse', optimizer=adam)
         plot_model(model, to_file='model.png', show_shapes=True)
 
