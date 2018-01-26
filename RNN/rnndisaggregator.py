@@ -126,7 +126,8 @@ class RNNDisaggregator(Disaggregator):
         train_mainchunk = np.reshape(train_mainchunk, (-1, SEQUENCE_LENGTH, 1))
         train_meterchunk = np.reshape(train_meterchunk, (-1, SEQUENCE_LENGTH, 1))
 
-        batch_size = int(train_mainchunk.shape[0] / 10)
+        # batch_size = int(train_mainchunk.shape[0] / 10)
+        batch_size = 16
 
         if self.std is None:
             rand_idx = random.randint(0, train_mainchunk.shape[0]-1)
@@ -551,7 +552,7 @@ class RNNDisaggregator(Disaggregator):
         model.add(TimeDistributed(Dense(128, activation='tanh')))
         model.add(TimeDistributed(Dense(1, activation='linear')))
 
-        adam = Adam(lr=1e-4, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0)
+        adam = Adam(lr=1e-4)
         model.compile(loss='mse', optimizer=adam)
         plot_model(model, to_file='model.png', show_shapes=True)
 
