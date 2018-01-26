@@ -11,6 +11,7 @@ from keras.models import load_model
 from keras.models import Sequential
 from keras.layers import Dense, Conv1D, LSTM, Bidirectional, Dropout, TimeDistributed
 from keras.utils import plot_model
+from keras.optimizers import Adam
 from nilmtk.disaggregate import Disaggregator
 
 
@@ -550,7 +551,8 @@ class RNNDisaggregator(Disaggregator):
         model.add(TimeDistributed(Dense(128, activation='tanh')))
         model.add(TimeDistributed(Dense(1, activation='linear')))
 
-        model.compile(loss='mse', optimizer='adam')
+        adam = Adam(lr=1e-4, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
+        model.compile(loss='mse', optimizer=adam)
         plot_model(model, to_file='model.png', show_shapes=True)
 
         return model
