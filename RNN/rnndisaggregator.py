@@ -126,8 +126,7 @@ class RNNDisaggregator(Disaggregator):
         train_mainchunk = np.reshape(train_mainchunk, (-1, SEQUENCE_LENGTH, 1))
         train_meterchunk = np.reshape(train_meterchunk, (-1, SEQUENCE_LENGTH, 1))
 
-        # batch_size = int(train_mainchunk.shape[0] / 10)
-        batch_size = 16
+        batch_size = int(train_mainchunk.shape[0] / 10)
 
         if self.std is None:
             rand_idx = random.randint(0, train_mainchunk.shape[0]-1)
