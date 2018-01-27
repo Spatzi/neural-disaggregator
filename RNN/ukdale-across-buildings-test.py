@@ -28,7 +28,7 @@ val_mainslist = []
 val_meterlist = []
 train_buildings = [1,2]
 val_buildings = [1,2]
-test_building = 3
+test_building = 4
 sample_period = 6
 meter_key = 'kettle'
 
