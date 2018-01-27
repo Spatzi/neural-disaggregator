@@ -62,10 +62,10 @@ rnn = RNNDisaggregator(train_logfile, val_logfile)
 start = time.time()
 print("========== TRAIN ============")
 epochs = 0
-for i in range(1):
-    rnn.train_across_buildings(train_mainslist, train_meterlist, val_mainslist, val_meterlist, epochs=1,
+for i in range(30):
+    rnn.train_across_buildings(train_mainslist, train_meterlist, val_mainslist, val_meterlist, epochs=10,
                                sample_period=sample_period)
-    epochs += 1
+    epochs += 10
     rnn.export_model(os.path.join(results_dir, "UKDALE-RNN-h{}-{}-{}-{}epochs.h5".format(min(train_buildings),
                                                                                          max(train_buildings),
                                                                                          meter_key,
