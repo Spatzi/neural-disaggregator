@@ -14,21 +14,21 @@ from rnndisaggregator import RNNDisaggregator
 print("========== OPEN DATASETS ============")
 train = DataSet('../data/ukdale.h5')
 train.clear_cache()
-train.set_window(start="13-4-2013", end="13-5-2013")
+train.set_window(start="13-4-2013", end="31-7-2013")
 validation = DataSet('../data/ukdale.h5')
 validation.clear_cache()
-validation.set_window(start="13-5-2013", end="13-6-2013")
+validation.set_window(start="31-7-2013", end="31-8-2013")
 test = DataSet('../data/ukdale.h5')
 test.clear_cache()
-test.set_window(start="13-6-2013", end="30-6-2013")
+test.set_window(start="13-4-2013", end="13-5-2013")
 
 train_mainslist = []
 train_meterlist = []
 val_mainslist = []
 val_meterlist = []
-train_buildings = [1,2,4,5]
-val_buildings = [1,2,4,5]
-test_building = 1
+train_buildings = [1,2]
+val_buildings = [1,2]
+test_building = 3
 sample_period = 6
 meter_key = 'kettle'
 
@@ -62,10 +62,10 @@ rnn = RNNDisaggregator(train_logfile, val_logfile)
 start = time.time()
 print("========== TRAIN ============")
 epochs = 0
-for i in range(20):
-    rnn.train_across_buildings(train_mainslist, train_meterlist, val_mainslist, val_meterlist, epochs=10,
+for i in range(1):
+    rnn.train_across_buildings(train_mainslist, train_meterlist, val_mainslist, val_meterlist, epochs=1,
                                sample_period=sample_period)
-    epochs += 10
+    epochs += 1
     rnn.export_model(os.path.join(results_dir, "UKDALE-RNN-h{}-{}-{}-{}epochs.h5".format(min(train_buildings),
                                                                                          max(train_buildings),
                                                                                          meter_key,
