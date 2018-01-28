@@ -15,19 +15,20 @@ from rnndisaggregator import RNNDisaggregator
 print("========== OPEN DATASETS ============")
 train = DataSet('../data/ukdale.h5')
 train.clear_cache()
-train.set_window(start="13-4-2013", end="31-7-2013")
+train.set_window(start="1-1-2014", end="15-4-2014")
 validation = DataSet('../data/ukdale.h5')
 validation.clear_cache()
-validation.set_window(start="31-7-2013", end="31-8-2013")
+validation.set_window(start="15-4-2014", end="15-5-2014")
 test = DataSet('../data/ukdale.h5')
 test.clear_cache()
-test.set_window(start="13-9-2013", end="30-9-2013")
+test.set_window(start="15-5-2014", end="30-5-2014")
 
 train_building = 1
 validation_building = 1
 test_building = 1
 sample_period = 6
-meter_key = 'kettle'
+meter_key = 'fridge'
+learning_rate = 1e-5
 
 train_elec = train.buildings[train_building].elec
 validation_elec = validation.buildings[validation_building].elec
@@ -41,12 +42,12 @@ train_mains = train_elec.mains()
 validation_mains = validation_elec.mains()
 test_mains = test_elec.mains()
 
-results_dir = '../results/UKDALE-RNN-{}'.format(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+results_dir = '../results/UKDALE-RNN-lr={}-{}'.format(learning_rate, datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
 os.makedirs(results_dir)
 train_logfile = os.path.join(results_dir, 'training.log')
 val_logfile = os.path.join(results_dir, 'validation.log')
 
-rnn = RNNDisaggregator(train_logfile, val_logfile)
+rnn = RNNDisaggregator(train_logfile, val_logfile, learning_rate)
 
 print("========== TRAIN ============")
 epochs = 0
@@ -110,4 +111,3 @@ ground_truth.plot(ax=ax3, plot_kwargs={'color': 'b', 'label': 'ground truth'}, p
 ax1.set_title('Appliance: {}'.format(meter_key))
 fig.legend()
 fig.savefig(os.path.join(results_dir, 'predicted_vs_ground_truth.png'))
-
