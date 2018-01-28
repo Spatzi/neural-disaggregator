@@ -31,6 +31,7 @@ val_buildings = [1,2]
 test_building = 4
 sample_period = 6
 meter_key = 'kettle'
+learning_rate = 1e-5
 
 for i in train_buildings:
     train_elec = train.buildings[i].elec
@@ -52,12 +53,13 @@ test_elec = test.buildings[test_building].elec
 test_meter = test_elec.submeters()[meter_key]
 test_mains = test_elec.mains()
 
-results_dir = '../results/UKDALE-ACROSS-BUILDINGS-RNN-{}'.format(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+results_dir = '../results/UKDALE-ACROSS-BUILDINGS-RNN-lr={}-{}'.format(learning_rate,
+                                                                       datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
 os.makedirs(results_dir)
 train_logfile = os.path.join(results_dir, 'training.log')
 val_logfile = os.path.join(results_dir, 'validation.log')
 
-rnn = RNNDisaggregator(train_logfile, val_logfile)
+rnn = RNNDisaggregator(train_logfile, val_logfile, learning_rate)
 
 start = time.time()
 print("========== TRAIN ============")
