@@ -15,13 +15,13 @@ from rnndisaggregator import RNNDisaggregator
 print("========== OPEN DATASETS ============")
 train = DataSet('../data/ukdale.h5')
 train.clear_cache()
-train.set_window(start="1-1-2014", end="15-4-2014")
+train.set_window(start="2-1-2014", end="15-5-2014")
 validation = DataSet('../data/ukdale.h5')
 validation.clear_cache()
-validation.set_window(start="15-4-2014", end="15-5-2014")
+validation.set_window(start="15-5-2014", end="15-6-2014")
 test = DataSet('../data/ukdale.h5')
 test.clear_cache()
-test.set_window(start="15-5-2014", end="30-5-2014")
+test.set_window(start="15-6-2014", end="30-6-2014")
 
 train_building = 1
 validation_building = 1
@@ -52,9 +52,9 @@ rnn = RNNDisaggregator(train_logfile, val_logfile, learning_rate)
 print("========== TRAIN ============")
 epochs = 0
 start = time.time()
-for i in range(30):
-    rnn.train(train_mains, train_meter, validation_mains, validation_meter, epochs=10, sample_period=sample_period)
-    epochs += 10
+for i in range(1):
+    rnn.train(train_mains, train_meter, validation_mains, validation_meter, epochs=1, sample_period=sample_period)
+    epochs += 1
     rnn.export_model(os.path.join(results_dir, "UKDALE-RNN-h{}-{}-{}epochs.h5".format(train_building, meter_key, epochs)))
     print("CHECKPOINT {}".format(epochs))
 end = time.time()
