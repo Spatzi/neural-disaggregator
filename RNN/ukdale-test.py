@@ -11,6 +11,9 @@ from datetime import datetime
 from nilmtk import DataSet, HDFDataStore
 from rnndisaggregator import RNNDisaggregator
 
+
+IMPORT = False
+
 windows = {
     'train': ['2-1-2014', '15-5-2014'],
     'validation': ['15-5-2014', '15-6-2014'],
@@ -35,8 +38,11 @@ sample_period = 6
 meter_key = 'fridge'
 learning_rate = 1e-5
 
-results_dir = '../results/UKDALE-RNN-lr={}-{}'.format(learning_rate, datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
-os.makedirs(results_dir)
+if IMPORT:
+    results_dir = 'xxx'  # TODO: insert directory name
+else:
+    results_dir = '../results/UKDALE-RNN-lr={}-{}'.format(learning_rate, datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
+    os.makedirs(results_dir)
 results_file = os.path.join(results_dir, 'results.txt')
 with open(results_file, "w") as text_file:
     text_file.write('========== PARAMETERS ============' + '\n')
@@ -65,7 +71,11 @@ test_mains = test_elec.mains()
 train_logfile = os.path.join(results_dir, 'training.log')
 val_logfile = os.path.join(results_dir, 'validation.log')
 
-rnn = RNNDisaggregator(train_logfile, val_logfile, learning_rate)
+if IMPORT:
+    rnn = RNNDisaggregator(train_logfile, val_logfile, learning_rate, init=False)
+    rnn.import_model('xxx')  # TODO: insert last model name
+else:
+    rnn = RNNDisaggregator(train_logfile, val_logfile, learning_rate)
 
 print("========== TRAIN ============")
 epochs = 0
@@ -77,7 +87,6 @@ for i in range(30):
     print("CHECKPOINT {}".format(epochs))
 end = time.time()
 print("Train =", end-start, "seconds.")
-
 
 headline = "========== DISAGGREGATE ============"
 with open(results_file, "a") as text_file:
