@@ -11,16 +11,22 @@ from nilmtk import DataSet, HDFDataStore
 from rnndisaggregator import RNNDisaggregator
 
 
+windows = {
+    'train': ['13-4-2013', '31-7-2013'],
+    'validation': ['31-7-2013', '31-8-2013'],
+    'test': ['13-4-2013', '13-5-2013']
+}
+
 print("========== OPEN DATASETS ============")
 train = DataSet('../data/ukdale.h5')
 train.clear_cache()
-train.set_window(start="13-4-2013", end="31-7-2013")
+train.set_window(start=windows['train'][0], end=windows['train'][1])
 validation = DataSet('../data/ukdale.h5')
 validation.clear_cache()
-validation.set_window(start="31-7-2013", end="31-8-2013")
+validation.set_window(start=windows['validation'][0], end=windows['validation'][1])
 test = DataSet('../data/ukdale.h5')
 test.clear_cache()
-test.set_window(start="13-4-2013", end="13-5-2013")
+test.set_window(start=windows['test'][0], end=windows['test'][1])
 
 train_mainslist = []
 train_meterlist = []
@@ -32,6 +38,22 @@ test_building = 4
 sample_period = 6
 meter_key = 'kettle'
 learning_rate = 1e-5
+
+results_dir = '../results/UKDALE-ACROSS-BUILDINGS-RNN-lr={}-{}'.format(learning_rate,
+                                                                       datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
+os.makedirs(results_dir)
+results_file = os.path.join(results_dir, 'results.txt')
+with open(results_file, "w") as text_file:
+    text_file.write('========== PARAMETERS ============' + '\n')
+    text_file.write('train window: ({}, {})\n'.format(windows['train'][0], windows['train'][1]))
+    text_file.write('validation window: ({}, {})\n'.format(windows['validation'][0], windows['validation'][1]))
+    text_file.write('test window: ({}, {})\n'.format(windows['test'][0], windows['test'][1]))
+    text_file.write('train buildings: {}\n'.format(train_buildings))
+    text_file.write('validation buildings: {}\n'.format(val_buildings))
+    text_file.write('test building: {}\n'.format(test_building))
+    text_file.write('appliance: {}\n'.format(meter_key))
+    text_file.write('sample period: {}\n'.format(sample_period))
+    text_file.write('learning rate: {}\n'.format(learning_rate))
 
 for i in train_buildings:
     train_elec = train.buildings[i].elec
@@ -53,9 +75,6 @@ test_elec = test.buildings[test_building].elec
 test_meter = test_elec.submeters()[meter_key]
 test_mains = test_elec.mains()
 
-results_dir = '../results/UKDALE-ACROSS-BUILDINGS-RNN-lr={}-{}'.format(learning_rate,
-                                                                       datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
-os.makedirs(results_dir)
 train_logfile = os.path.join(results_dir, 'training.log')
 val_logfile = os.path.join(results_dir, 'validation.log')
 
@@ -68,17 +87,14 @@ for i in range(30):
     rnn.train_across_buildings(train_mainslist, train_meterlist, val_mainslist, val_meterlist, epochs=10,
                                sample_period=sample_period)
     epochs += 10
-    rnn.export_model(os.path.join(results_dir, "UKDALE-RNN-h{}-{}-{}-{}epochs.h5".format(min(train_buildings),
-                                                                                         max(train_buildings),
-                                                                                         meter_key,
-                                                                                         epochs)))
+    rnn.export_model(os.path.join(results_dir, "UKDALE-RNN-{}-{}epochs.h5".format(meter_key, epochs)))
     print("CHECKPOINT {}".format(epochs))
 end = time.time()
 print("Train =", end-start, "seconds.")
 
 results_file = os.path.join(results_dir, 'results.txt')
 headline = "========== DISAGGREGATE ============"
-with open(results_file, "w") as text_file:
+with open(results_file, "a") as text_file:
     text_file.write(headline + '\n')
 print(headline)
 
@@ -88,10 +104,7 @@ epochs = np.array(validation.as_matrix()[:,0], dtype='int')
 loss = np.array(validation.as_matrix()[:,1], dtype='float32')
 argmin = np.argmin(loss)
 best_epoch = epochs[argmin] + 1
-rnn.import_model(os.path.join(results_dir, "UKDALE-RNN-h{}-{}-{}-{}epochs.h5".format(min(train_buildings),
-                                                                                     max(train_buildings),
-                                                                                     meter_key,
-                                                                                     best_epoch)))
+rnn.import_model(os.path.join(results_dir, "UKDALE-RNN-{}-{}epochs.h5".format(meter_key, best_epoch)))
 test_loss = rnn.evaluate(test_mains, test_meter, sample_period=sample_period)
 line = 'Test loss: {}'.format(test_loss)
 with open(results_file, "a") as text_file:
@@ -107,8 +120,8 @@ print("========== PLOTS ============")
 # plot train and validation loss
 plt.plot(epochs, loss, label='validation')
 training = pd.read_csv(train_logfile)
-epochs = np.array(training.as_matrix()[:,0], dtype='int')
-loss = np.array(training.as_matrix()[:,1], dtype='float32')
+epochs = np.array(training.as_matrix()[1:,0], dtype='int')
+loss = np.array(training.as_matrix()[1:,1], dtype='float32')
 plt.plot(epochs, loss, label='train')
 plt.title('Test loss: {}'.format(test_loss))
 plt.xlabel('epochs')
