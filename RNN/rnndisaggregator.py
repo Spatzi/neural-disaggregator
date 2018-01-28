@@ -38,11 +38,10 @@ class RNNDisaggregator(Disaggregator):
         :param train_logfile: Training loss loggin.
         :param val_logfile: Validation loss loggin.
         :param learning_rate: Learning rate for training.
-        :param init: Whether to initialize the logfiles. Use False when before importing an existing model.
+        :param init: Whether to initialize the logfiles and model. Use False before importing an existing model.
         """
 
         self.MODEL_NAME = "LSTM"
-        self.model = self._create_model(learning_rate)
         self.mmax = None
         self.std = None
         self.MIN_CHUNK_LENGTH = 100
@@ -51,6 +50,7 @@ class RNNDisaggregator(Disaggregator):
         self.val_logfile = val_logfile
 
         if init:
+            self.model = self._create_model(learning_rate)
             self.init_logfile(train_logfile)
             self.init_logfile(val_logfile)
 
