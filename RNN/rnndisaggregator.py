@@ -15,7 +15,7 @@ from keras.optimizers import Adam
 from nilmtk.disaggregate import Disaggregator
 
 
-SEQUENCE_LENGTH = 128
+SEQUENCE_LENGTH = 512
 
 
 class RNNDisaggregator(Disaggregator):
@@ -31,17 +31,18 @@ class RNNDisaggregator(Disaggregator):
     total_epochs: total amount of updating steps so far.
     """
 
-    def __init__(self, train_logfile, val_logfile, init=True):
+    def __init__(self, train_logfile, val_logfile, learning_rate, init=True):
         """
         Initialize disaggregator.
 
         :param train_logfile: Training loss loggin.
         :param val_logfile: Validation loss loggin.
+        :param learning_rate: Learning rate for training.
         :param init: Whether to initialize the logfiles. Use False when before importing an existing model.
         """
 
         self.MODEL_NAME = "LSTM"
-        self.model = self._create_model()
+        self.model = self._create_model(learning_rate)
         self.mmax = None
         self.std = None
         self.MIN_CHUNK_LENGTH = 100
@@ -533,9 +534,10 @@ class RNNDisaggregator(Disaggregator):
         return tchunk
 
     @staticmethod
-    def _create_model():
+    def _create_model(learning_rate):
         """
         Creates the RNN module described in the paper.
+        :param learning_rate: Learning rate for training.
         """
 
         model = Sequential()
@@ -551,7 +553,7 @@ class RNNDisaggregator(Disaggregator):
         model.add(TimeDistributed(Dense(128, activation='tanh')))
         model.add(TimeDistributed(Dense(1, activation='linear')))
 
-        adam = Adam(lr=1e-5)
+        adam = Adam(lr=learning_rate)
         model.compile(loss='mse', optimizer=adam)
         plot_model(model, to_file='model.png', show_shapes=True)
 
