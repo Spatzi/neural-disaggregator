@@ -11,7 +11,7 @@ from nilmtk import DataSet, HDFDataStore
 from rnndisaggregator import RNNDisaggregator
 
 
-IMPORT = False
+IMPORT = True  # TODO: True if continue training
 
 windows = {
     'train': ['13-4-2013', '31-7-2013'],
@@ -42,7 +42,7 @@ meter_key = 'kettle'
 learning_rate = 1e-5
 
 if IMPORT:
-    results_dir = 'xxx'  # TODO: insert directory name
+    results_dir = '../results/UKDALE-ACROSS-BUILDINGS-RNN-lr=1e-5-2018-01-27 18:32:42'  # TODO: insert directory name
 else:
     results_dir = '../results/UKDALE-ACROSS-BUILDINGS-RNN-lr={}-{}'.format(learning_rate,
                                                                            datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
@@ -85,13 +85,13 @@ val_logfile = os.path.join(results_dir, 'validation.log')
 
 if IMPORT:
     rnn = RNNDisaggregator(train_logfile, val_logfile, learning_rate, init=False)
-    rnn.import_model('xxx')  # TODO: insert last model name
+    rnn.import_model(os.path.join(results_dir, "UKDALE-RNN-h1-2-kettle-300epochs.h5"))  # TODO: insert last model name
 else:
     rnn = RNNDisaggregator(train_logfile, val_logfile, learning_rate)
 
 start = time.time()
 print("========== TRAIN ============")
-epochs = 0
+epochs = 300  # TODO: update according to the last model if IMPORT = True
 for i in range(30):
     rnn.train_across_buildings(train_mainslist, train_meterlist, val_mainslist, val_meterlist, epochs=10,
                                sample_period=sample_period)
