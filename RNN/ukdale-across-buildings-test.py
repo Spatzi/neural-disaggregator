@@ -85,14 +85,14 @@ val_logfile = os.path.join(results_dir, 'validation.log')
 
 if IMPORT:
     rnn = RNNDisaggregator(train_logfile, val_logfile, learning_rate, init=False)
-    rnn.import_model(os.path.join(results_dir, "UKDALE-RNN-kettle-380epochs.h5"))  # TODO: insert last model name
+    rnn.import_model(os.path.join(results_dir, "UKDALE-RNN-kettle-510epochs.h5"))  # TODO: insert last model name
 else:
     rnn = RNNDisaggregator(train_logfile, val_logfile, learning_rate)
 
 start = time.time()
 print("========== TRAIN ============")
-epochs = 380  # TODO: update according to the last model if IMPORT = True
-for i in range(22):
+epochs = 510  # TODO: update according to the last model if IMPORT = True
+for i in range(90):
     rnn.train_across_buildings(train_mainslist, train_meterlist, val_mainslist, val_meterlist, epochs=10,
                                sample_period=sample_period)
     epochs += 10
