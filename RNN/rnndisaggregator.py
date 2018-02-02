@@ -545,7 +545,7 @@ class RNNDisaggregator(Disaggregator):
         # 1D Conv
         # model.add(Conv1D(16, 4, activation="linear", input_shape=(None,1), padding="same", strides=1))
         model.add(Conv1D(32, 6, activation="linear", input_shape=(None, 1), padding="same", strides=1))
-        model.add(Dropout(0.7))
+        model.add(TimeDistributed(Dropout(0.7)))
 
         # Bi-directional LSTMs
         # model.add(Bidirectional(LSTM(128, return_sequences=True, stateful=False), merge_mode='concat'))
