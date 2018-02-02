@@ -11,7 +11,7 @@ from nilmtk import DataSet, HDFDataStore
 from rnndisaggregator import RNNDisaggregator
 
 
-IMPORT = True  # TODO: True if continue training
+IMPORT = False  # TODO: True if continue training
 
 windows = {
     'train': ['13-4-2013', '31-7-2013'],
@@ -91,7 +91,7 @@ else:
 
 start = time.time()
 print("========== TRAIN ============")
-epochs = 610  # TODO: update according to the last model if IMPORT = True
+epochs = 0  # TODO: update according to the last model if IMPORT = True
 for i in range(0):
     rnn.train_across_buildings(train_mainslist, train_meterlist, val_mainslist, val_meterlist, epochs=10,
                                sample_period=sample_period)
