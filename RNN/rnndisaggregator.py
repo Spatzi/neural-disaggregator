@@ -272,7 +272,7 @@ class RNNDisaggregator(Disaggregator):
         idx = rng.choice(idx, len(idx), replace=False)
         train_mainchunk, train_meterchunk = all_train_mainchunks[idx], all_train_meterchunks[idx]
 
-        batch_size = int(train_mainchunk.shape[0] / 20)
+        batch_size = int(train_mainchunk.shape[0] / 50)
 
         if self.std is None:
             rand_idx = random.randint(0, train_mainchunk.shape[0]-1)
@@ -544,13 +544,14 @@ class RNNDisaggregator(Disaggregator):
 
         # 1D Conv
         # model.add(Conv1D(16, 4, activation="linear", input_shape=(None,1), padding="same", strides=1))
-        model.add(Conv1D(32, 4, activation="linear", input_shape=(None, 1), padding="same", strides=1))
+        model.add(Conv1D(32, 6, activation="linear", input_shape=(None, 1), padding="same", strides=1))
+        model.add(Dropout(0.7))
 
         # Bi-directional LSTMs
         # model.add(Bidirectional(LSTM(128, return_sequences=True, stateful=False), merge_mode='concat'))
         # model.add(Bidirectional(LSTM(256, return_sequences=True, stateful=False), merge_mode='concat'))
-        model.add(Bidirectional(LSTM(192, return_sequences=True, stateful=False), merge_mode='concat'))
-        model.add(Bidirectional(LSTM(384, return_sequences=True, stateful=False), merge_mode='concat'))
+        model.add(Bidirectional(LSTM(192, return_sequences=True, stateful=False), merge_mode='concat', dropout=0.7))
+        model.add(Bidirectional(LSTM(256, return_sequences=True, stateful=False), merge_mode='concat', dropout=0.7))
 
         # Fully Connected Layers
         model.add(TimeDistributed(Dense(128, activation='tanh')))
