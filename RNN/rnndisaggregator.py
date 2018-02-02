@@ -550,8 +550,8 @@ class RNNDisaggregator(Disaggregator):
         # Bi-directional LSTMs
         # model.add(Bidirectional(LSTM(128, return_sequences=True, stateful=False), merge_mode='concat'))
         # model.add(Bidirectional(LSTM(256, return_sequences=True, stateful=False), merge_mode='concat'))
-        model.add(Bidirectional(LSTM(192, return_sequences=True, stateful=False), merge_mode='concat', dropout=0.7))
-        model.add(Bidirectional(LSTM(256, return_sequences=True, stateful=False), merge_mode='concat', dropout=0.7))
+        model.add(Bidirectional(LSTM(192, return_sequences=True, stateful=False, dropout=0.7), merge_mode='concat'))
+        model.add(Bidirectional(LSTM(256, return_sequences=True, stateful=False, dropout=0.7), merge_mode='concat'))
 
         # Fully Connected Layers
         model.add(TimeDistributed(Dense(128, activation='tanh')))
