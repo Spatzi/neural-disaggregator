@@ -15,8 +15,8 @@ IMPORT = False  # TODO: True if continue training
 
 windows = {
     'train': ['13-4-2013', '31-7-2013'],
-    'validation': ['31-7-2013', '31-8-2013'],
-    'test': ['13-4-2013', '13-5-2013']
+    'validation': ['13-4-2013', '13-6-2013'],
+    'test': ['30-6-2014', '31-7-2014']
 }
 
 print("========== OPEN DATASETS ============")
@@ -35,8 +35,8 @@ train_meterlist = []
 val_mainslist = []
 val_meterlist = []
 train_buildings = [1,2]
-val_buildings = [1,2]
-test_building = 4
+val_buildings = [4]
+test_building = 5
 sample_period = 6
 meter_key = 'kettle'
 learning_rate = 1e-5
