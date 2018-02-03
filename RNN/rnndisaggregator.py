@@ -408,7 +408,11 @@ class RNNDisaggregator(Disaggregator):
         X_batch = self._normalize(X_batch)
 
         pred = self.model.predict(X_batch, batch_size=16)
-        pred = np.reshape(pred, (pred.shape[0]*SEQUENCE_LENGTH))
+        if type(pred) == list:
+            length = len(pred)
+        else:
+            length = pred.shape[0]
+        pred = np.reshape(pred, (length*SEQUENCE_LENGTH))
         column = pd.Series(pred, index=mains.index[:(X_batch.shape[0]*SEQUENCE_LENGTH)], name=0)
 
         appliance_powers_dict = {}
