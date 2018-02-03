@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 
 from mpl_toolkits.mplot3d import Axes3D
@@ -167,3 +168,32 @@ fig = dict(data=data, layout=layout)
 
 plotly.offline.plot(fig, filename='filled-3d-lines')
 
+
+def plot_loss(train_logfile, val_logfile, results_dir, best_epoch=None, test_loss=None):
+    """
+    Plot train and validation loss. In addition, plot test loss for the best epoch (if available).
+    :param train_logfile: Training loss loggin.
+    :param val_logfile: Validation loss loggin.
+    :param results_dir: The directory to save the plot.
+    :param best_epoch: The epoch with the minimum validation loss. None if not available.
+    :param test_loss: The test loss in the best epoch. None if not available.
+    """
+
+    validation = pd.read_csv(val_logfile)
+    epochs = np.array(validation.as_matrix()[:, 0], dtype='int')
+    loss = np.array(validation.as_matrix()[:, 1], dtype='float32')
+    plt.plot(epochs, loss, label='validation')
+    training = pd.read_csv(train_logfile)
+    epochs = np.array(training.as_matrix()[1:, 0], dtype='int')
+    loss = np.array(training.as_matrix()[1:, 1], dtype='float32')
+    plt.plot(epochs, loss, label='train')
+
+    if best_epoch and test_loss:
+        plt.plot([best_epoch - 1], [test_loss], 'ro', label='test')
+        plt.title('Test loss: {}'.format(test_loss))
+
+    plt.xlabel('epochs')
+    plt.ylabel('loss')
+    plt.legend()
+    plt.savefig(os.path.join(results_dir, 'loss.png'))
+    plt.close()

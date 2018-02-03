@@ -10,6 +10,7 @@ import numpy as np
 from datetime import datetime
 from nilmtk import DataSet, HDFDataStore
 from rnndisaggregator import RNNDisaggregator
+from plots import plot_loss
 
 
 IMPORT = False
@@ -84,6 +85,7 @@ for i in range(30):
     rnn.train(train_mains, train_meter, validation_mains, validation_meter, epochs=10, sample_period=sample_period)
     epochs += 10
     rnn.export_model(os.path.join(results_dir, "UKDALE-RNN-{}-{}epochs.h5".format(meter_key, epochs)))
+    plot_loss(train_logfile, val_logfile, results_dir)
     print("CHECKPOINT {}".format(epochs))
 end = time.time()
 print("Train =", end-start, "seconds.")
@@ -112,19 +114,8 @@ rnn.disaggregate(test_mains, output, results_file, train_meter, sample_period=sa
 output.close()
 
 print("========== PLOTS ============")
-# plot train and validation loss
-plt.plot(epochs, loss, label='validation')
-training = pd.read_csv(train_logfile)
-epochs = np.array(training.as_matrix()[1:,0], dtype='int')
-loss = np.array(training.as_matrix()[1:,1], dtype='float32')
-plt.plot(epochs, loss, label='train')
-plt.plot([best_epoch - 1], [test_loss], 'ro', label='test')
-plt.title('Test loss: {}'.format(test_loss))
-plt.xlabel('epochs')
-plt.ylabel('loss')
-plt.legend()
-plt.savefig(os.path.join(results_dir, 'loss.png'))
-plt.close()
+# plot train, validation and test loss
+plot_loss(train_logfile, val_logfile, results_dir, best_epoch, test_loss)
 
 # plot predicted energy consumption
 result = DataSet(os.path.join(results_dir, disag_filename))
