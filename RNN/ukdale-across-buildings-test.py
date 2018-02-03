@@ -14,17 +14,17 @@ from plots import plot_loss
 
 IMPORT = True  # TODO: True if continue training
 
-# windows = {
-#     'train': ['13-4-2013', '31-7-2013'],
-#     'validation': ['13-4-2013', '13-6-2013'],
-#     'test': ['30-6-2014', '31-7-2014']
-# }
-
 windows = {
     'train': ['13-4-2013', '31-7-2013'],
     'validation': ['13-4-2013', '13-6-2013'],
-    'test': ['13-9-2013', '30-9-2013']
+    'test': ['30-6-2014', '31-7-2014']
 }
+
+# windows = {
+#     'train': ['13-4-2013', '31-7-2013'],
+#     'validation': ['13-4-2013', '13-6-2013'],
+#     'test': ['13-9-2013', '30-9-2013']
+# }
 
 print("========== OPEN DATASETS ============")
 train = DataSet('../data/ukdale.h5')
@@ -43,7 +43,7 @@ val_mainslist = []
 val_meterlist = []
 train_buildings = [1,2]
 val_buildings = [4]
-test_building = 1
+test_building = 5
 sample_period = 6
 meter_key = 'kettle'
 learning_rate = 1e-5
@@ -54,7 +54,7 @@ else:
     results_dir = '../results/UKDALE-ACROSS-BUILDINGS-RNN-lr={}-{}'.format(learning_rate,
                                                                            datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
     os.makedirs(results_dir)
-results_file = os.path.join(results_dir, 'results_new.txt')
+results_file = os.path.join(results_dir, 'results.txt')
 with open(results_file, "w") as text_file:
     text_file.write('========== PARAMETERS ============' + '\n')
     text_file.write('train window: ({}, {})\n'.format(windows['train'][0], windows['train'][1]))
@@ -99,7 +99,7 @@ else:
 start = time.time()
 print("========== TRAIN ============")
 epochs = 300  # TODO: update according to the last model if IMPORT = True
-for i in range(0):
+for i in range(10):
     rnn.train_across_buildings(train_mainslist, train_meterlist, val_mainslist, val_meterlist, epochs=10,
                                sample_period=sample_period)
     epochs += 10
@@ -127,7 +127,7 @@ with open(results_file, "a") as text_file:
     text_file.write(line + '\n')
 print(line)
 
-disag_filename = 'disag-out_new.h5'
+disag_filename = 'disag-out.h5'
 output = HDFDataStore(os.path.join(results_dir, disag_filename), 'w')
 rnn.disaggregate(test_mains, output, results_file, train_meterlist[0], sample_period=sample_period)
 output.close()
@@ -148,4 +148,4 @@ predicted.plot(ax=ax2, plot_kwargs={'color': 'r', 'label': 'predicted'}, plot_le
 ground_truth.plot(ax=ax3, plot_kwargs={'color': 'b', 'label': 'ground truth'}, plot_legend=False)
 ax1.set_title('Appliance: {}'.format(meter_key))
 fig.legend()
-fig.savefig(os.path.join(results_dir, 'predicted_vs_ground_truth_new.png'))
+fig.savefig(os.path.join(results_dir, 'predicted_vs_ground_truth.png'))
