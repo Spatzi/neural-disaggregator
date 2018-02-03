@@ -199,3 +199,66 @@ def plot_loss(train_logfile, val_logfile, results_dir, best_epoch=None, test_los
     plt.legend()
     plt.savefig(os.path.join(results_dir, 'loss.png'))
     plt.close()
+
+
+def plot_datasets_meter():
+
+    windows = {
+        'train': ['13-4-2013', '31-7-2013'],
+        'validation': ['13-4-2013', '13-6-2013'],
+        'test': ['30-6-2014', '31-7-2014']
+    }
+
+    train = DataSet('../data/ukdale.h5')
+    train.clear_cache()
+    train.set_window(start=windows['train'][0], end=windows['train'][1])
+    validation = DataSet('../data/ukdale.h5')
+    validation.clear_cache()
+    validation.set_window(start=windows['validation'][0], end=windows['validation'][1])
+    test = DataSet('../data/ukdale.h5')
+    test.clear_cache()
+    test.set_window(start=windows['test'][0], end=windows['test'][1])
+
+    train_buildings = [1, 2]
+    val_buildings = [4]
+    test_building = 5
+    sample_period = 6
+    meter_key = 'kettle'
+
+    train_meterlist = []
+    val_meterlist = []
+
+    for i in val_buildings:
+        val_elec = validation.buildings[i].elec
+        val_meterlist += [val_elec.submeters()[meter_key]]
+
+    fig, (ax1, ax2) = plt.subplots(2, sharex=True, sharey=True)
+    val_meterlist[0].plot(ax=ax2, plot_kwargs={'color': 'g'}, plot_legend=False)
+    ax2.set_title('Validation set - building 4')
+    fig.legend()
+    fig.savefig('val.png')
+
+    test_elec = test.buildings[test_building].elec
+    test_meter = test_elec.submeters()[meter_key]
+
+    fig, (ax1, ax2) = plt.subplots(2, sharex=True, sharey=True)
+    test_meter.plot(ax=ax2, plot_kwargs={'color': 'g'}, plot_legend=False)
+    ax2.set_title('Test set - building 5')
+    fig.legend()
+    fig.savefig('test.png')
+
+    for i in train_buildings:
+        train_elec = train.buildings[i].elec
+        train_meterlist += [train_elec.submeters()[meter_key]]
+
+    fig, (ax1, ax2) = plt.subplots(2, sharex=True, sharey=True)
+    train_meterlist[0].plot(ax=ax1, plot_kwargs={'color': 'g'}, plot_legend=False)
+    train_meterlist[1].plot(ax=ax2, plot_kwargs={'color': 'g'}, plot_legend=False)
+    ax1.set_title('Train set - building 1')
+    ax2.set_title('Train set - building 2')
+    fig.legend()
+    fig.savefig('train.png')
+
+
+if __name__ == "__main__":
+    plot_datasets_meter()
