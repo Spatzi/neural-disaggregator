@@ -197,5 +197,5 @@ def plot_loss(train_logfile, val_logfile, results_dir, best_epoch=None, test_los
     plt.xlabel('epochs')
     plt.ylabel('loss')
     plt.legend()
-    plt.savefig(os.path.join(results_dir, 'loss.png'))
+    plt.savefig(os.path.join(results_dir, 'loss_new.png'))
     plt.close()
