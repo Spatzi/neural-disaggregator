@@ -204,9 +204,9 @@ def plot_loss(train_logfile, val_logfile, results_dir, best_epoch=None, test_los
 def plot_datasets_meter():
 
     windows = {
-        'train': ['13-4-2013', '31-7-2013'],
+        'train': ['30-3-2013', '15-7-2013'],
         'validation': ['13-4-2013', '13-6-2013'],
-        'test': ['30-6-2014', '31-7-2014']
+        'test': ['30-6-2014', '30-7-2014']
     }
 
     train = DataSet('../data/ukdale.h5')
@@ -219,45 +219,35 @@ def plot_datasets_meter():
     test.clear_cache()
     test.set_window(start=windows['test'][0], end=windows['test'][1])
 
-    train_buildings = [1, 2]
+    train_buildings = [1,2]
     val_buildings = [4]
     test_building = 5
     sample_period = 6
-    meter_key = 'kettle'
+    meter_key = 'fridge'
 
     train_meterlist = []
     val_meterlist = []
-
-    for i in val_buildings:
-        val_elec = validation.buildings[i].elec
-        val_meterlist += [val_elec.submeters()[meter_key]]
-
-    fig, (ax1, ax2) = plt.subplots(2, sharex=True, sharey=True)
-    val_meterlist[0].plot(ax=ax2, plot_kwargs={'color': 'g'}, plot_legend=False)
-    ax2.set_title('Validation set - building 4')
-    fig.legend()
-    fig.savefig('val.png')
-
-    test_elec = test.buildings[test_building].elec
-    test_meter = test_elec.submeters()[meter_key]
-
-    fig, (ax1, ax2) = plt.subplots(2, sharex=True, sharey=True)
-    test_meter.plot(ax=ax2, plot_kwargs={'color': 'g'}, plot_legend=False)
-    ax2.set_title('Test set - building 5')
-    fig.legend()
-    fig.savefig('test.png')
 
     for i in train_buildings:
         train_elec = train.buildings[i].elec
         train_meterlist += [train_elec.submeters()[meter_key]]
 
-    fig, (ax1, ax2) = plt.subplots(2, sharex=True, sharey=True)
-    train_meterlist[0].plot(ax=ax1, plot_kwargs={'color': 'g'}, plot_legend=False)
-    train_meterlist[1].plot(ax=ax2, plot_kwargs={'color': 'g'}, plot_legend=False)
-    ax1.set_title('Train set - building 1')
-    ax2.set_title('Train set - building 2')
+    for i in val_buildings:
+        val_elec = validation.buildings[i].elec
+        val_meterlist += [val_elec.submeters()[meter_key]]
+
+    test_elec = test.buildings[test_building].elec
+    test_meter = test_elec.submeters()[meter_key]
+
+    fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, sharex=False, sharey=True)
+    fig.set_size_inches(15.5, 10.5)
+    train_meterlist[0].plot(ax=ax1, plot_kwargs={'color': 'g', 'label': 'Train set - building 1'}, plot_legend=False)
+    train_meterlist[1].plot(ax=ax2, plot_kwargs={'color': 'b', 'label': 'Train set - building 2'}, plot_legend=False)
+    val_meterlist[0].plot(ax=ax3, plot_kwargs={'color': 'y', 'label': 'Validation set - building 4'}, plot_legend=False)
+    test_meter.plot(ax=ax4, plot_kwargs={'color': 'r', 'label': 'Test set - building 5'}, plot_legend=False)
+    ax1.set_title('Appliance: {}'.format(meter_key))
     fig.legend()
-    fig.savefig('train.png')
+    fig.savefig('datasets.png')
 
 
 if __name__ == "__main__":
