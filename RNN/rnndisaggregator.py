@@ -547,17 +547,17 @@ class RNNDisaggregator(Disaggregator):
         model = Sequential()
 
         # 1D Conv
-        # model.add(Conv1D(16, 4, activation="linear", input_shape=(None,1), padding="same", strides=1))
-        model.add(Conv1D(32, 6, activation="linear", input_shape=(None, 1), padding="same", strides=1))
-        model.add(TimeDistributed(Dropout(0.3)))
+        model.add(Conv1D(16, 4, activation="linear", input_shape=(None,1), padding="same", strides=1))
+        # model.add(Conv1D(32, 6, activation="linear", input_shape=(None, 1), padding="same", strides=1))
+        # model.add(TimeDistributed(Dropout(0.3)))
 
         # Bi-directional LSTMs
-        # model.add(Bidirectional(LSTM(128, return_sequences=True, stateful=False), merge_mode='concat'))
-        # model.add(Bidirectional(LSTM(256, return_sequences=True, stateful=False), merge_mode='concat'))
-        model.add(Bidirectional(LSTM(192, return_sequences=True, stateful=False, dropout=0.3, recurrent_dropout=0.3),
-                                merge_mode='concat'))
-        model.add(Bidirectional(LSTM(256, return_sequences=True, stateful=False, dropout=0.3, recurrent_dropout=0.3),
-                                merge_mode='concat'))
+        model.add(Bidirectional(LSTM(128, return_sequences=True, stateful=False), merge_mode='concat'))
+        model.add(Bidirectional(LSTM(256, return_sequences=True, stateful=False), merge_mode='concat'))
+        # model.add(Bidirectional(LSTM(192, return_sequences=True, stateful=False, dropout=0.3, recurrent_dropout=0.3),
+        #                         merge_mode='concat'))
+        # model.add(Bidirectional(LSTM(256, return_sequences=True, stateful=False, dropout=0.3, recurrent_dropout=0.3),
+        #                         merge_mode='concat'))
 
         # Fully Connected Layers
         model.add(TimeDistributed(Dense(128, activation='tanh')))
