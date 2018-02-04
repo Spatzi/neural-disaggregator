@@ -15,7 +15,7 @@ from plots import plot_loss
 IMPORT = False  # TODO: True if continue training
 
 windows = {
-    'train': ['30-3-2013', '15-7-2013'],
+    'train': [['2-1-2014', '15-5-2014'], ['30-3-2013', '15-7-2013']],
     'validation': ['13-4-2013', '13-6-2013'],
     'test': ['30-6-2014', '30-7-2014']
 }
@@ -26,10 +26,14 @@ windows = {
 #     'test': ['13-9-2013', '30-9-2013']
 # }
 
+train = []
 print("========== OPEN DATASETS ============")
-train = DataSet('../data/ukdale.h5')
-train.clear_cache()
-train.set_window(start=windows['train'][0], end=windows['train'][1])
+for window in windows['train']:
+    t = DataSet('../data/ukdale.h5')
+    t.clear_cache()
+    t.set_window(start=window[0], end=window[1])
+    train += [t]
+
 validation = DataSet('../data/ukdale.h5')
 validation.clear_cache()
 validation.set_window(start=windows['validation'][0], end=windows['validation'][1])
@@ -57,7 +61,8 @@ else:
 results_file = os.path.join(results_dir, 'results.txt')
 with open(results_file, "w") as text_file:
     text_file.write('========== PARAMETERS ============' + '\n')
-    text_file.write('train window: ({}, {})\n'.format(windows['train'][0], windows['train'][1]))
+    for window in windows['train']:
+        text_file.write('train window: ({}, {})\n'.format(window[0], window[1]))
     text_file.write('validation window: ({}, {})\n'.format(windows['validation'][0], windows['validation'][1]))
     text_file.write('test window: ({}, {})\n'.format(windows['test'][0], windows['test'][1]))
     text_file.write('train buildings: {}\n'.format(train_buildings))
@@ -67,8 +72,8 @@ with open(results_file, "w") as text_file:
     text_file.write('sample period: {}\n'.format(sample_period))
     text_file.write('learning rate: {}\n'.format(learning_rate))
 
-for i in train_buildings:
-    train_elec = train.buildings[i].elec
+for i, b in enumerate(train_buildings):
+    train_elec = train[i].buildings[b].elec
     train_meter = train_elec.submeters()[meter_key]
     train_mains = train_elec.mains()
 

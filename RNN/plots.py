@@ -204,14 +204,18 @@ def plot_loss(train_logfile, val_logfile, results_dir, best_epoch=None, test_los
 def plot_datasets_meter():
 
     windows = {
-        'train': ['30-3-2013', '15-7-2013'],
+        'train': [['2-1-2014', '15-5-2014'], ['30-3-2013', '15-7-2013']],
         'validation': ['13-4-2013', '13-6-2013'],
         'test': ['30-6-2014', '30-7-2014']
     }
 
-    train = DataSet('../data/ukdale.h5')
-    train.clear_cache()
-    train.set_window(start=windows['train'][0], end=windows['train'][1])
+    train = []
+    for window in windows['train']:
+        t = DataSet('../data/ukdale.h5')
+        t.clear_cache()
+        t.set_window(start=window[0], end=window[1])
+        train += [t]
+
     validation = DataSet('../data/ukdale.h5')
     validation.clear_cache()
     validation.set_window(start=windows['validation'][0], end=windows['validation'][1])
@@ -228,8 +232,8 @@ def plot_datasets_meter():
     train_meterlist = []
     val_meterlist = []
 
-    for i in train_buildings:
-        train_elec = train.buildings[i].elec
+    for i, b in enumerate(train_buildings):
+        train_elec = train[i].buildings[b].elec
         train_meterlist += [train_elec.submeters()[meter_key]]
 
     for i in val_buildings:
