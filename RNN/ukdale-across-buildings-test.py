@@ -12,12 +12,12 @@ from rnndisaggregator import RNNDisaggregator
 from plots import plot_loss
 
 
-IMPORT = True  # TODO: True if continue training
+IMPORT = False  # TODO: True if continue training
 
 windows = {
-    'train': ['13-4-2013', '31-7-2013'],
+    'train': ['30-3-2013', '15-7-2013'],
     'validation': ['13-4-2013', '13-6-2013'],
-    'test': ['30-6-2014', '31-7-2014']
+    'test': ['30-6-2014', '30-7-2014']
 }
 
 # windows = {
@@ -45,7 +45,7 @@ train_buildings = [1,2]
 val_buildings = [4]
 test_building = 5
 sample_period = 6
-meter_key = 'kettle'
+meter_key = 'fridge'
 learning_rate = 1e-5
 
 if IMPORT:
@@ -98,8 +98,8 @@ else:
 
 start = time.time()
 print("========== TRAIN ============")
-epochs = 300  # TODO: update according to the last model if IMPORT = True
-for i in range(10):
+epochs = 0  # TODO: update according to the last model if IMPORT = True
+for i in range(30):
     rnn.train_across_buildings(train_mainslist, train_meterlist, val_mainslist, val_meterlist, epochs=10,
                                sample_period=sample_period)
     epochs += 10
