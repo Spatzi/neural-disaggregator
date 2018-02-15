@@ -371,4 +371,4 @@ def plot_zoomed_predicted_energy_consumption():
 
 
 if __name__ == "__main__":
-    plot_zoomed_predicted_energy_consumption()
+    generate_vertices()
