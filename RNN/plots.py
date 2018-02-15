@@ -313,7 +313,7 @@ def plot_zoomed_predicted_energy_consumption():
     train.set_window(start="13-4-2013", end="31-7-2013")
     test = DataSet('../data/ukdale.h5')
     test.clear_cache()
-    test.set_window(start='15-9-2013 12:00:00', end='16-9-2013')
+    test.set_window(start='15-9-2013 12:00:00', end='15-9-2013 18:00:00')
 
     train_building = 1
     test_building = 1
@@ -367,7 +367,7 @@ def plot_zoomed_predicted_energy_consumption():
     ax3.plot(x2, y2, color='b')
     ax1.set_title('Appliance: {}'.format(meter_key))
     fig.legend()
-    fig.savefig(os.path.join(results_dir, 'zoomed_predicted_vs_ground_truth2.png'))
+    fig.savefig(os.path.join(results_dir, 'zoomed_predicted_vs_ground_truth.png'))
 
 
 if __name__ == "__main__":
