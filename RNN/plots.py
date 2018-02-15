@@ -86,7 +86,7 @@ def generate_vertices():
 
 
 def plot_prediction_over_epochs_plt():
-    generate_vertices()
+    # generate_vertices()
     results_dir = '../results/UKDALE-RNN-lr=1e-5-2018-01-26 14:33:59'
     verts = pickle.load(open(os.path.join(results_dir, 'vertices.pkl'), 'rb'))
     zs = pickle.load(open(os.path.join(results_dir, 'zs.pkl'), 'rb'))
@@ -108,7 +108,9 @@ def plot_prediction_over_epochs_plt():
     ax.set_zlim3d(0, 2000)
     ax.view_init(-40,-94)
 
-    plt.savefig(os.path.join(results_dir, 'prediction_over_epochs.png'))
+    # plt.savefig(os.path.join(results_dir, 'prediction_over_epochs.png'))
+    plt.show()
+    print('ok')
 
 
 def plot_prediction_over_epochs_ploty():
