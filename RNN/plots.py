@@ -20,7 +20,7 @@ def generate_vertices():
     test.set_window('15-9-2013 15:30:00', '15-9-2013 17:30:00')
 
     train_building = 1
-    test_building = 1
+    test_building =
     sample_period = 6
     meter_key = 'kettle'
     learning_rate = 1e-5
@@ -85,7 +85,7 @@ def generate_vertices():
     pickle.dump(ys, open(os.path.join(results_dir, 'ys.pkl'), 'wb'))
 
 
-def plot_prediction_over_epochs_plt(results_dir):
+def plot_prediction_over_epochs_plt():
     generate_vertices()
     results_dir = '../results/UKDALE-RNN-lr=1e-5-2018-01-26 14:33:59'
     verts = pickle.load(open(os.path.join(results_dir, 'vertices.pkl'), 'rb'))
@@ -306,4 +306,4 @@ def plot_datasets_meter():
 
 
 if __name__ == "__main__":
-    plot_datasets_meter()
+    plot_prediction_over_epochs_plt()
