@@ -80,17 +80,17 @@ def generate_vertices():
         verts[i].insert(0, [0, np.array([0])])
         verts[i].append([len(verts[i]), np.array([0])])
 
-    pickle.dump(verts, open(os.path.join(results_dir, 'vertices.pkl'), 'w'))
-    pickle.dump(zs, open(os.path.join(results_dir, 'zs.pkl'), 'w'))
-    pickle.dump(ys, open(os.path.join(results_dir, 'ys.pkl'), 'w'))
+    pickle.dump(verts, open(os.path.join(results_dir, 'vertices.pkl'), 'wb'))
+    pickle.dump(zs, open(os.path.join(results_dir, 'zs.pkl'), 'wb'))
+    pickle.dump(ys, open(os.path.join(results_dir, 'ys.pkl'), 'wb'))
 
 
 def plot_prediction_over_epochs_plt():
     generate_vertices()
     results_dir = '../results/UKDALE-RNN-lr=1e-5-2018-01-26 14:33:59'
-    verts = pickle.load(open(os.path.join(results_dir, 'vertices.pkl'), 'r'))
-    zs = pickle.load(open(os.path.join(results_dir, 'zs.pkl'), 'r'))
-    ys = pickle.load(open(os.path.join(results_dir, 'ys.pkl'), 'r'))
+    verts = pickle.load(open(os.path.join(results_dir, 'vertices.pkl'), 'rb'))
+    zs = pickle.load(open(os.path.join(results_dir, 'zs.pkl'), 'rb'))
+    ys = pickle.load(open(os.path.join(results_dir, 'ys.pkl'), 'rb'))
 
     fig = plt.figure(figsize=(18, 8))
     ax = fig.gca(projection='3d')
@@ -109,7 +109,9 @@ def plot_prediction_over_epochs_plt():
     ax.view_init(-40,-94)
 
     # plt.savefig(os.path.join(results_dir, 'prediction_over_epochs.png'))
+    import pdb
     plt.show()
+    pdb.set_trace()
     print('ok')
 
 
