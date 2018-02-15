@@ -17,10 +17,10 @@ def generate_vertices():
     train.set_window(start="13-4-2013", end="31-7-2013")
     test = DataSet('../data/ukdale.h5')
     test.clear_cache()
-    test.set_window(start='15-9-2013 15:30:00', end='15-9-2013 16:15:00')
+    test.set_window(start='7-2-2014 08:00:00', end='7-3-2014')
 
     train_building = 1
-    test_building = 1
+    test_building = 5
     sample_period = 6
     meter_key = 'kettle'
     learning_rate = 1e-5
@@ -31,17 +31,17 @@ def generate_vertices():
     train_meter = train_elec.submeters()[meter_key]
     test_mains = test_elec.mains()
 
-    results_dir = '../results/UKDALE-RNN-lr=1e-5-2018-01-26 14:33:59'
+    results_dir = '../results/UKDALE-ACROSS-BUILDINGS-RNN-lr=1e-05-2018-02-03-11-48-12'
     train_logfile = os.path.join(results_dir, 'training.log')
     val_logfile = os.path.join(results_dir, 'validation.log')
     rnn = RNNDisaggregator(train_logfile, val_logfile, learning_rate, init=False)
 
     verts = []
     zs = []  # epochs
-    for z in np.arange(10, 301, 10):
+    for z in np.arange(10, 341, 10):
 
         # disaggregate model
-        model = 'UKDALE-RNN-h1-kettle-{}epochs.h5'.format(z)
+        model = 'UKDALE-RNN-kettle-{}epochs.h5'.format(z)
         rnn.import_model(os.path.join(results_dir, model))
         disag_filename = 'disag-out-{}epochs.h5'.format(z)
         output = HDFDataStore(os.path.join(results_dir, disag_filename), 'w')
@@ -72,7 +72,7 @@ def generate_vertices():
     xs = np.arange(ys.shape[0])  # timestamps
 
     verts.append(list(zip(xs, ys)))  # add list of x-y-coordinates
-    zs.append(310)
+    zs.append(350)
 
     zs = np.asarray(zs)
 
