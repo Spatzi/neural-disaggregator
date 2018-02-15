@@ -310,17 +310,17 @@ def plot_datasets_meter():
 def plot_zoomed_predicted_energy_consumption():
     train = DataSet('../data/ukdale.h5')
     train.clear_cache()
-    train.set_window(start="13-4-2013", end="31-7-2013")
+    train.set_window(start="2-1-2014", end="15-5-2014")
     test = DataSet('../data/ukdale.h5')
     test.clear_cache()
-    test.set_window(start='15-9-2013 15:30:00', end='15-9-2013 16:15:00')
+    test.set_window(start='26-6-2014', end='27-6-2014')
 
     train_building = 1
     test_building = 1
     sample_period = 6
-    meter_key = 'kettle'
+    meter_key = 'fridge'
     learning_rate = 1e-5
-    best_epoch = 300
+    best_epoch = 560
 
     train_elec = train.buildings[train_building].elec
     test_elec = test.buildings[test_building].elec
@@ -328,12 +328,12 @@ def plot_zoomed_predicted_energy_consumption():
     train_meter = train_elec.submeters()[meter_key]
     test_mains = test_elec.mains()
 
-    results_dir = '../results/UKDALE-RNN-lr=1e-5-2018-01-26 14:33:59'
+    results_dir = '../results/UKDALE-RNN-lr=1e-05-2018-01-28-12-01-34'
     train_logfile = os.path.join(results_dir, 'training.log')
     val_logfile = os.path.join(results_dir, 'validation.log')
     rnn = RNNDisaggregator(train_logfile, val_logfile, learning_rate, init=False)
 
-    model = 'UKDALE-RNN-h1-kettle-{}epochs.h5'.format(best_epoch)
+    model = 'UKDALE-RNN-fridge-{}epochs.h5'.format(best_epoch)
     rnn.import_model(os.path.join(results_dir, model))
     disag_filename = 'disag-out-{}epochs.h5'.format(best_epoch)
     output = HDFDataStore(os.path.join(results_dir, disag_filename), 'w')
@@ -366,7 +366,7 @@ def plot_zoomed_predicted_energy_consumption():
     ax2.plot(x1, y1, color='r')
     ax3.plot(x2, y2, color='b')
     ax1.set_title('Appliance: {}'.format(meter_key))
-    plt.xticks(np.arange(0,x2.shape[0]+1,90), ('15-9-2013 15:30', '15:40', '15:50', '16:00', '16:10', '16:20'))
+    # plt.xticks(np.arange(0,x2.shape[0]+1,90), ('15-9-2013 15:30', '15:40', '15:50', '16:00', '16:10', '16:20'))
     fig.legend()
     fig.savefig(os.path.join(results_dir, 'zoomed_predicted_vs_ground_truth.png'))
 
