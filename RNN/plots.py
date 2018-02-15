@@ -1,9 +1,11 @@
 import os
 import plotly
 import pickle
+import matplotlib
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+matplotlib.use('GTKAgg')
 
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.collections import PolyCollection
@@ -86,7 +88,7 @@ def generate_vertices():
 
 
 def plot_prediction_over_epochs_plt():
-    # generate_vertices()
+    generate_vertices()
     results_dir = '../results/UKDALE-RNN-lr=1e-5-2018-01-26 14:33:59'
     verts = pickle.load(open(os.path.join(results_dir, 'vertices.pkl'), 'rb'))
     zs = pickle.load(open(os.path.join(results_dir, 'zs.pkl'), 'rb'))
