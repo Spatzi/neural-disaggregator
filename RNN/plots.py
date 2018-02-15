@@ -366,7 +366,7 @@ def plot_zoomed_predicted_energy_consumption():
     ax2.plot(x1, y1, color='r')
     ax3.plot(x2, y2, color='b')
     ax1.set_title('Appliance: {}'.format(meter_key))
-    plt.xticks(np.arange(0,10000,2000), ('Rotem', 'Tom', 'Dick', 'Harry', 'Sally', 'Sue'))
+    plt.xticks(np.arange(0,10001,1250), ('7-2-2014 08:00', '12:00', '14:00', '16:00', '18:00', '20:00', '22:00', '00:00'))
     fig.legend()
     fig.savefig(os.path.join(results_dir, 'zoomed_predicted_vs_ground_truth.png'))
 
