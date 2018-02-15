@@ -310,14 +310,14 @@ def plot_datasets_meter():
 def plot_zoomed_predicted_energy_consumption():
     test = DataSet('../data/ukdale.h5')
     test.clear_cache()
-    test.set_window(start='15-9-2013', end='16-9-2013')
+    test.set_window(start='13-7-2014', end='16-7-2015')
 
-    test_building = 1
+    test_building = 5
     sample_period = 6
     meter_key = 'kettle'
     test_elec = test.buildings[test_building].elec
 
-    results_dir = '../results/UKDALE-RNN-lr=1e-5-2018-01-26 14:33:59'
+    results_dir = '../results/UKDALE-ACROSS-BUILDINGS-RNN-lr=1e-05-2018-02-03-11-48-12'
     disag_filename = 'disag-out.h5'
 
     result = DataSet(os.path.join(results_dir, disag_filename))
@@ -344,7 +344,7 @@ def plot_zoomed_predicted_energy_consumption():
     ax3.plot(x2, y2, color='b')
     ax1.set_title('Appliance: {}'.format(meter_key))
     fig.legend()
-    fig.savefig(os.path.join(results_dir, 'zoomed_predicted_vs_ground_truth.png'))
+    fig.savefig(os.path.join(results_dir, 'zoomed_predicted_vs_ground_truth2.png'))
 
 
 if __name__ == "__main__":
