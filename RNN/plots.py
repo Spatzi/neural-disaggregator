@@ -313,6 +313,7 @@ def plot_zoomed_predicted_energy_consumption():
     test.set_window(start='15-9-2013', end='16-9-2013')
 
     test_building = 1
+    sample_period = 6
     meter_key = 'kettle'
     test_elec = test.buildings[test_building].elec
 
@@ -321,13 +322,26 @@ def plot_zoomed_predicted_energy_consumption():
 
     result = DataSet(os.path.join(results_dir, disag_filename))
     res_elec = result.buildings[test_building].elec
+
     predicted = res_elec[meter_key]
+    predicted = predicted.power_series(sample_period=sample_period)
+    predicted = next(predicted)
+    predicted.fillna(0, inplace=True)
+    y1 = np.array(predicted)  # power
+    x1 = np.arange(y1.shape[0])  # timestamps
+
     ground_truth = test_elec[meter_key]
+    ground_truth = ground_truth.power_series(sample_period=sample_period)
+    ground_truth = next(ground_truth)
+    ground_truth.fillna(0, inplace=True)
+    y2 = np.array(ground_truth)  # power
+    x2 = np.arange(y2.shape[0])  # timestamps
+
     fig, (ax1, ax2, ax3) = plt.subplots(3, sharex=True, sharey=True)
-    predicted.plot(ax=ax1, plot_kwargs={'color': 'r', 'label': 'predicted'})
-    ground_truth.plot(ax=ax1, plot_kwargs={'color': 'b', 'label': 'ground truth'})
-    predicted.plot(ax=ax2, plot_kwargs={'color': 'r', 'label': 'predicted'}, plot_legend=False)
-    ground_truth.plot(ax=ax3, plot_kwargs={'color': 'b', 'label': 'ground truth'}, plot_legend=False)
+    ax1.plot(x1, y1, color='r', label='predicted')
+    ax1.plot(x2, y2, color='b', label='ground truth')
+    ax2.plot(x1, y1, color='r')
+    ax3.plot(x2, y2, color='b')
     ax1.set_title('Appliance: {}'.format(meter_key))
     fig.legend()
     fig.savefig(os.path.join(results_dir, 'zoomed_predicted_vs_ground_truth.png'))
