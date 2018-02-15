@@ -41,7 +41,7 @@ def generate_vertices():
     for z in np.arange(10, 401, 10):
 
         # disaggregate model
-        model = 'UKDALE-RNN-h1-kettle-{}epochs.h5'.format(z)
+        model = 'UKDALE-RNN-kettle-{}epochs.h5'.format(z)
         rnn.import_model(os.path.join(results_dir, model))
         disag_filename = 'disag-out-{}epochs.h5'.format(z)
         output = HDFDataStore(os.path.join(results_dir, disag_filename), 'w')
