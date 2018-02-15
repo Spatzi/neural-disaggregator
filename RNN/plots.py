@@ -308,21 +308,44 @@ def plot_datasets_meter():
 
 
 def plot_zoomed_predicted_energy_consumption():
+    train = DataSet('../data/ukdale.h5')
+    train.clear_cache()
+    train.set_window(start="13-4-2013", end="31-7-2013")
     test = DataSet('../data/ukdale.h5')
     test.clear_cache()
-    test.set_window(start='7-1-2014', end='7-4-2014')
+    test.set_window(start='15-9-2013', end='16-9-2013')
 
-    test_building = 5
+    train_building = 1
+    test_building = 1
     sample_period = 6
     meter_key = 'kettle'
+    learning_rate = 1e-5
+    best_epoch = 300
+
+    train_elec = train.buildings[train_building].elec
     test_elec = test.buildings[test_building].elec
 
-    results_dir = '../results/UKDALE-ACROSS-BUILDINGS-RNN-lr=1e-05-2018-02-03-11-48-12'
-    disag_filename = 'disag-out.h5'
+    train_meter = train_elec.submeters()[meter_key]
+    test_mains = test_elec.mains()
 
+    results_dir = '../results/UKDALE-RNN-lr=1e-5-2018-01-26 14:33:59'
+    train_logfile = os.path.join(results_dir, 'training.log')
+    val_logfile = os.path.join(results_dir, 'validation.log')
+    rnn = RNNDisaggregator(train_logfile, val_logfile, learning_rate, init=False)
+
+    model = 'UKDALE-RNN-h1-kettle-{}epochs.h5'.format(best_epoch)
+    rnn.import_model(os.path.join(results_dir, model))
+    disag_filename = 'disag-out-{}epochs.h5'.format(best_epoch)
+    output = HDFDataStore(os.path.join(results_dir, disag_filename), 'w')
+    results_file = os.path.join(results_dir, 'results-{}epochs.txt'.format(best_epoch))
+    rnn.disaggregate(test_mains, output, results_file, train_meter, sample_period=sample_period)
+    os.remove(results_file)
+    output.close()
+
+    # get predicted curve for the best epoch
     result = DataSet(os.path.join(results_dir, disag_filename))
     res_elec = result.buildings[test_building].elec
-
+    os.remove(os.path.join(results_dir, disag_filename))
     predicted = res_elec[meter_key]
     predicted = predicted.power_series(sample_period=sample_period)
     predicted = next(predicted)
