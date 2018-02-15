@@ -1,11 +1,9 @@
 import os
 import plotly
 import pickle
-import matplotlib
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-matplotlib.use('GTKAgg')
 
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.collections import PolyCollection
@@ -82,17 +80,17 @@ def generate_vertices():
         verts[i].insert(0, [0, np.array([0])])
         verts[i].append([len(verts[i]), np.array([0])])
 
-    pickle.dump(verts, open(os.path.join(results_dir, 'vertices.pkl'), 'wb'))
-    pickle.dump(zs, open(os.path.join(results_dir, 'zs.pkl'), 'wb'))
-    pickle.dump(ys, open(os.path.join(results_dir, 'ys.pkl'), 'wb'))
+    pickle.dump(verts, open(os.path.join(results_dir, 'vertices.pkl'), 'w'))
+    pickle.dump(zs, open(os.path.join(results_dir, 'zs.pkl'), 'w'))
+    pickle.dump(ys, open(os.path.join(results_dir, 'ys.pkl'), 'w'))
 
 
 def plot_prediction_over_epochs_plt():
     generate_vertices()
     results_dir = '../results/UKDALE-RNN-lr=1e-5-2018-01-26 14:33:59'
-    verts = pickle.load(open(os.path.join(results_dir, 'vertices.pkl'), 'rb'))
-    zs = pickle.load(open(os.path.join(results_dir, 'zs.pkl'), 'rb'))
-    ys = pickle.load(open(os.path.join(results_dir, 'ys.pkl'), 'rb'))
+    verts = pickle.load(open(os.path.join(results_dir, 'vertices.pkl'), 'r'))
+    zs = pickle.load(open(os.path.join(results_dir, 'zs.pkl'), 'r'))
+    ys = pickle.load(open(os.path.join(results_dir, 'ys.pkl'), 'r'))
 
     fig = plt.figure(figsize=(18, 8))
     ax = fig.gca(projection='3d')
