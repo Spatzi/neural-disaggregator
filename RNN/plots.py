@@ -310,13 +310,13 @@ def plot_datasets_meter():
 def plot_zoomed_predicted_energy_consumption():
     test = DataSet('../data/ukdale.h5')
     test.clear_cache()
-    test.set_window(start='7-13-2014', end='7-16-2014')
+    test.set_window(start='15-9-2013', end='16-9-2013')
 
-    test_building = 5
+    test_building = 1
     meter_key = 'kettle'
     test_elec = test.buildings[test_building].elec
 
-    results_dir = '../results/UKDALE-ACROSS-BUILDINGS-RNN-lr=1e-05-2018-02-03-11-48-12'
+    results_dir = '../results/UKDALE-RNN-lr=1e-5-2018-01-26 14:33:59'
     disag_filename = 'disag-out.h5'
 
     result = DataSet(os.path.join(results_dir, disag_filename))
