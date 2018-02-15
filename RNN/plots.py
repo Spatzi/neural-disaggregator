@@ -20,7 +20,7 @@ def generate_vertices():
     test.set_window('15-9-2013 15:30:00', '15-9-2013 17:30:00')
 
     train_building = 1
-    test_building =
+    test_building = 1
     sample_period = 6
     meter_key = 'kettle'
     learning_rate = 1e-5
