@@ -259,7 +259,7 @@ def plot_datasets_meter():
     windows = {
         'train': [['25-6-2013 12:00:00', '26-6-2013']],
         'validation': ['13-6-2013', '13-7-2013'],
-        'test': ['7-3-2014 09:40:00', '7-3-2014 10:05:00']
+        'test': ['27-7-2013 18:00:00', '27-7-2013 21:00:00']
     }
 
     train = []
@@ -278,9 +278,9 @@ def plot_datasets_meter():
 
     train_buildings = [1]
     val_buildings = [1]
-    test_building = 5
+    test_building = 2
     sample_period = 6
-    meter_key = 'kettle'
+    meter_key = 'dish washer'
 
     train_meterlist = []
     val_meterlist = []
@@ -307,5 +307,31 @@ def plot_datasets_meter():
     plt.savefig('datasets.png')
 
 
+def plot_zoomed_predicted_energy_consumption():
+    test = DataSet('../data/ukdale.h5')
+    test.clear_cache()
+    test.set_window(start='7-3-2014 09:40:00', end='7-3-2014 10:05:00')
+
+    test_building = 5
+    meter_key = 'kettle'
+    test_elec = test.buildings[test_building].elec
+
+    results_dir = '../results/UKDALE-ACROSS-BUILDINGS-RNN-lr=1e-05-2018-02-03-11-48-12'
+    disag_filename = 'disag-out.h5'
+
+    result = DataSet(os.path.join(results_dir, disag_filename))
+    res_elec = result.buildings[test_building].elec
+    predicted = res_elec[meter_key]
+    ground_truth = test_elec[meter_key]
+    fig, (ax1, ax2, ax3) = plt.subplots(3, sharex=True, sharey=True)
+    predicted.plot(ax=ax1, plot_kwargs={'color': 'r', 'label': 'predicted'})
+    ground_truth.plot(ax=ax1, plot_kwargs={'color': 'b', 'label': 'ground truth'})
+    predicted.plot(ax=ax2, plot_kwargs={'color': 'r', 'label': 'predicted'}, plot_legend=False)
+    ground_truth.plot(ax=ax3, plot_kwargs={'color': 'b', 'label': 'ground truth'}, plot_legend=False)
+    ax1.set_title('Appliance: {}'.format(meter_key))
+    fig.legend()
+    fig.savefig(os.path.join(results_dir, 'zoomed_predicted_vs_ground_truth.png'))
+
+
 if __name__ == "__main__":
-    generate_vertices()
+    plot_zoomed_predicted_energy_consumption()
