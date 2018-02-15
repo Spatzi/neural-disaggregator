@@ -1,17 +1,117 @@
 import os
+import plotly
+import pickle
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
 from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.collections import PolyCollection
 from nilmtk import DataSet, HDFDataStore
 from rnndisaggregator import RNNDisaggregator
 
-import plotly.plotly as py
-import plotly
+
+def generate_vertices():
+    train = DataSet('../data/ukdale.h5')
+    train.clear_cache()
+    train.set_window(start="13-4-2013", end="31-7-2013")
+    test = DataSet('../data/ukdale.h5')
+    test.clear_cache()
+    test.set_window('15-9-2013 15:30:00', '15-9-2013 17:30:00')
+
+    train_building = 1
+    test_building = 1
+    sample_period = 6
+    meter_key = 'kettle'
+    learning_rate = 1e-5
+
+    train_elec = train.buildings[train_building].elec
+    test_elec = test.buildings[test_building].elec
+
+    train_meter = train_elec.submeters()[meter_key]
+    test_mains = test_elec.mains()
+
+    results_dir = '../results/UKDALE-RNN-lr=1e-5-2018-01-26 14:33:59'
+    train_logfile = os.path.join(results_dir, 'training.log')
+    val_logfile = os.path.join(results_dir, 'validation.log')
+    rnn = RNNDisaggregator(train_logfile, val_logfile, learning_rate, init=False)
+
+    verts = []
+    zs = []  # epochs
+    for z in np.arange(10, 301, 10):
+
+        # disaggregate model
+        model = 'UKDALE-RNN-h1-kettle-{}epochs.h5'.format(z)
+        rnn.import_model(os.path.join(results_dir, model))
+        disag_filename = 'disag-out-{}epochs.h5'.format(z)
+        output = HDFDataStore(os.path.join(results_dir, disag_filename), 'w')
+        results_file = os.path.join(results_dir, 'results-{}epochs.txt'.format(z))
+        rnn.disaggregate(test_mains, output, results_file, train_meter, sample_period=sample_period)
+        os.remove(results_file)
+        output.close()
+
+        # get predicted curve for epoch=z
+        result = DataSet(os.path.join(results_dir, disag_filename))
+        res_elec = result.buildings[test_building].elec
+        os.remove(os.path.join(results_dir, disag_filename))
+        predicted = res_elec[meter_key]
+        predicted = predicted.power_series(sample_period=sample_period)
+        predicted = next(predicted)
+        predicted.fillna(0, inplace=True)
+        ys = np.array(predicted)  # power
+        xs = np.arange(ys.shape[0])  # timestamps
+
+        verts.append(list(zip(xs, ys)))  # add list of x-y-coordinates
+        zs.append(z)
+
+    ground_truth = test_elec[meter_key]
+    ground_truth = ground_truth.power_series(sample_period=sample_period)
+    ground_truth = next(ground_truth)
+    ground_truth.fillna(0, inplace=True)
+    ys = np.array(ground_truth)  # power
+    xs = np.arange(ys.shape[0])  # timestamps
+
+    verts.append(list(zip(xs, ys)))  # add list of x-y-coordinates
+    zs.append(310)
+
+    zs = np.asarray(zs)
+
+    for i in range(len(verts)):
+        verts[i].insert(0, [0, np.array([0])])
+        verts[i].append([len(verts[i]), np.array([0])])
+
+    pickle.dump(verts, open(os.path.join(results_dir, 'vertices.pkl'), 'wb'))
+    pickle.dump(zs, open(os.path.join(results_dir, 'zs.pkl'), 'wb'))
+    pickle.dump(ys, open(os.path.join(results_dir, 'ys.pkl'), 'wb'))
 
 
-def plot_prediction_over_epochs():
+def plot_prediction_over_epochs_plt(results_dir):
+    generate_vertices()
+    results_dir = '../results/UKDALE-RNN-lr=1e-5-2018-01-26 14:33:59'
+    verts = pickle.load(open(os.path.join(results_dir, 'vertices.pkl'), 'rb'))
+    zs = pickle.load(open(os.path.join(results_dir, 'zs.pkl'), 'rb'))
+    ys = pickle.load(open(os.path.join(results_dir, 'ys.pkl'), 'rb'))
+
+    fig = plt.figure(figsize=(18, 8))
+    ax = fig.gca(projection='3d')
+
+    poly = PolyCollection(verts[::], facecolors='w')
+    poly.set_edgecolor((0, 0, 0, .5))
+    poly.set_facecolor((.9, .9, 1, 0.3))
+    ax.add_collection3d(poly, zs=zs[::], zdir='y')
+
+    ax.set_xlabel('timestamps')
+    ax.set_xlim3d(0, ys.shape[0])
+    ax.set_ylabel('epochs')
+    ax.set_ylim3d(0, 320)
+    ax.set_zlabel('power')
+    ax.set_zlim3d(0, 2000)
+    ax.view_init(-40,-94)
+
+    plt.savefig(os.path.join(results_dir, 'prediction_over_epochs.png'))
+
+
+def plot_prediction_over_epochs_ploty():
     train = DataSet('../data/ukdale.h5')
     train.clear_cache()
     train.set_window(start="13-4-2013", end="31-7-2013")
@@ -35,48 +135,6 @@ def plot_prediction_over_epochs():
     train_logfile = os.path.join(results_dir, 'training.log')
     val_logfile = os.path.join(results_dir, 'validation.log')
     rnn = RNNDisaggregator(train_logfile, val_logfile, learning_rate, init=False)
-
-    # fig = plt.figure()
-    # ax = fig.gca(projection='3d')
-    #
-    # for i in range(10, 21, 10):
-    #     # disaggregate model
-    #     model = 'UKDALE-RNN-h1-kettle-{}epochs.h5'.format(i)
-    #     rnn.import_model(os.path.join(results_dir, model))
-    #     disag_filename = 'disag-out-{}epochs.h5'.format(i)
-    #     output = HDFDataStore(os.path.join(results_dir, disag_filename), 'w')
-    #     results_file = os.path.join(results_dir, 'results-{}epochs.txt'.format(i))
-    #     rnn.disaggregate(test_mains, output, results_file, train_meter, sample_period=sample_period)
-    #     os.remove(results_file)
-    #     output.close()
-    #
-    #     # plot predicted curve for epoch=i
-    #     result = DataSet(os.path.join(results_dir, disag_filename))
-    #     res_elec = result.buildings[test_building].elec
-    #     os.remove(os.path.join(results_dir, disag_filename))
-    #     predicted = res_elec[meter_key]
-    #     predicted = predicted.power_series(sample_period=sample_period)
-    #     predicted = next(predicted)
-    #     predicted.fillna(0, inplace=True)
-    #     # timestamps = np.array(predicted.keys())
-    #     power = np.array(predicted)
-    #     timestamps = np.array(range(power.shape[0]))
-    #     ax.plot(timestamps, power, zs=i, zdir='z', color='b', alpha=0.3)
-    #
-    # # plot ground truth curve as the last curve
-    # ground_truth = test_elec[meter_key]
-    # ground_truth = ground_truth.power_series(sample_period=sample_period)
-    # ground_truth = next(ground_truth)
-    # ground_truth.fillna(0, inplace=True)
-    # # timestamps = np.array(ground_truth.keys())
-    # power = np.array(ground_truth)
-    # timestamps = np.array(range(power.shape[0]))
-    # ax.plot(timestamps, power, zs=110, zdir='z', color='r')
-    # ax.fill_between(timestamps, 0, power)
-    # ax.set_xlabel('timestamps')
-    # ax.set_ylabel('power')
-    # ax.set_zlabel('epochs')
-    # plt.show()
 
     data = []
 
@@ -102,16 +160,15 @@ def plot_prediction_over_epochs():
         power = predicted.tolist()
         length = len(power)
         timestamps = list(range(length))
-        epochs = [i] * length
 
         x = []
         y = []
         z = []
         ci = int(255 / 420 * i)  # ci = "color index"
         for j in range(length):
-            x.append([timestamps[j], timestamps[j]])
-            y.append([i, i + 5])
-            z.append([power[j], power[j]])
+            x.append([timestamps[j], timestamps[j]])  # timestamps
+            y.append([i, i + 5])  # epochs
+            z.append([power[j], power[j]])  # power
         data.append(dict(
             z=z,
             x=x,
@@ -121,29 +178,14 @@ def plot_prediction_over_epochs():
             type='surface',
         ))
 
-        # data.append(dict(
-        #     type='scatter3d',
-        #     mode='lines',
-        #     x=timestamps,
-        #     y=epochs,
-        #     z=power,
-        #     name='',
-        #     line=dict(
-        #         color='black',
-        #         width=4
-        #     ),
-        # ))
-
     # plot ground truth curve as the last curve
     ground_truth = test_elec[meter_key]
     ground_truth = ground_truth.power_series(sample_period=sample_period)
     ground_truth = next(ground_truth)
     ground_truth.fillna(0, inplace=True)
-    # timestamps = np.array(ground_truth.keys())
     power = ground_truth.tolist()
     length = len(power)
     timestamps = list(range(length))
-    epochs = [410] * length
 
     i = 410
     x = []
@@ -151,9 +193,9 @@ def plot_prediction_over_epochs():
     z = []
     ci = int(255 / 410 * i)  # ci = "color index"
     for j in range(length):
-        x.append([timestamps[j], timestamps[j]])
-        y.append([i, i + 5])
-        z.append([power[j], power[j]])
+        x.append([timestamps[j], timestamps[j]])  # timestamps
+        y.append([i, i + 5])  # epochs
+        z.append([power[j], power[j]])  # power
     data.append(dict(
         z=z,
         x=x,
@@ -162,19 +204,6 @@ def plot_prediction_over_epochs():
         showscale=False,
         type='surface',
     ))
-
-    # data.append(dict(
-    #     type='scatter3d',
-    #     mode='lines',
-    #     x=timestamps,
-    #     y=epochs,
-    #     z=power,
-    #     name='',
-    #     line=dict(
-    #         color='black',
-    #         width=4
-    #     ),
-    # ))
 
     layout = dict(
         title='prediction over epochs',
@@ -226,9 +255,9 @@ def plot_loss(train_logfile, val_logfile, results_dir, best_epoch=None, test_los
 def plot_datasets_meter():
 
     windows = {
-        'train': [['2-1-2014', '15-5-2014'], ['30-3-2013', '15-7-2013']],
-        'validation': ['13-4-2013', '13-6-2013'],
-        'test': ['23-7-2014 10:40:00', '23-7-2014 11:00:00']
+        'train': [['25-6-2013 12:00:00', '26-6-2013']],
+        'validation': ['13-6-2013', '13-7-2013'],
+        'test': ['15-9-2013 15:30:00', '15-9-2013 17:30:00']
     }
 
     train = []
@@ -245,9 +274,9 @@ def plot_datasets_meter():
     test.clear_cache()
     test.set_window(start=windows['test'][0], end=windows['test'][1])
 
-    train_buildings = [1,2]
-    val_buildings = [4]
-    test_building = 5
+    train_buildings = [1]
+    val_buildings = [1]
+    test_building = 1
     sample_period = 6
     meter_key = 'kettle'
 
@@ -264,19 +293,17 @@ def plot_datasets_meter():
 
     test_elec = test.buildings[test_building].elec
     test_meter = test_elec.submeters()[meter_key]
-    test_meter.plot()
-    plt.show()
 
     fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, sharex=False, sharey=True)
     fig.set_size_inches(15.5, 10.5)
     train_meterlist[0].plot(ax=ax1, plot_kwargs={'color': 'g', 'label': 'Train set - building 1'}, plot_legend=False)
-    train_meterlist[1].plot(ax=ax2, plot_kwargs={'color': 'b', 'label': 'Train set - building 2'}, plot_legend=False)
-    val_meterlist[0].plot(ax=ax3, plot_kwargs={'color': 'y', 'label': 'Validation set - building 4'}, plot_legend=False)
-    test_meter.plot(ax=ax4, plot_kwargs={'color': 'r', 'label': 'Test set - building 5'}, plot_legend=False)
+    # train_meterlist[1].plot(ax=ax2, plot_kwargs={'color': 'b', 'label': 'Train set - building 2'}, plot_legend=False)
+    val_meterlist[0].plot(ax=ax3, plot_kwargs={'color': 'y', 'label': 'Validation set - building 1'}, plot_legend=False)
+    test_meter.plot(ax=ax4, plot_kwargs={'color': 'r', 'label': 'Test set - building 1'}, plot_legend=False)
     ax1.set_title('Appliance: {}'.format(meter_key))
     fig.legend()
-    fig.savefig('datasets.png')
+    plt.savefig('datasets.png')
 
 
 if __name__ == "__main__":
-    plot_prediction_over_epochs()
+    plot_datasets_meter()
