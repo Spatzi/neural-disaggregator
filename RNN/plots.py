@@ -359,6 +359,7 @@ def plot_zoomed_predicted_energy_consumption():
     ground_truth.fillna(0, inplace=True)
     y2 = np.array(ground_truth)  # power
     x2 = np.arange(y2.shape[0])  # timestamps
+    print(x2.shape[0])
 
     fig, (ax1, ax2, ax3) = plt.subplots(3, sharex=True, sharey=True)
     ax1.plot(x1, y1, color='r', label='predicted')
@@ -366,7 +367,7 @@ def plot_zoomed_predicted_energy_consumption():
     ax2.plot(x1, y1, color='r')
     ax3.plot(x2, y2, color='b')
     ax1.set_title('Appliance: {}'.format(meter_key))
-    plt.xticks(np.arange(0,501,125), ('15-9-2013 15:30', '15:45', '16:00', '16:15'))
+    plt.xticks(np.arange(0,x2.shape[0],125), ('15-9-2013 15:30', '15:45', '16:00', '16:15'))
     fig.legend()
     fig.savefig(os.path.join(results_dir, 'zoomed_predicted_vs_ground_truth.png'))
 
