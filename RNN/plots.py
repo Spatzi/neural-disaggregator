@@ -17,10 +17,10 @@ def generate_vertices():
     train.set_window(start="13-4-2013", end="31-7-2013")
     test = DataSet('../data/ukdale.h5')
     test.clear_cache()
-    test.set_window('15-9-2013 15:30:00', '15-9-2013 17:30:00')
+    test.set_window(start='7-3-2014 09:40:00', end='7-3-2014 10:05:00')
 
     train_building = 1
-    test_building = 1
+    test_building = 5
     sample_period = 6
     meter_key = 'kettle'
     learning_rate = 1e-5
@@ -31,14 +31,14 @@ def generate_vertices():
     train_meter = train_elec.submeters()[meter_key]
     test_mains = test_elec.mains()
 
-    results_dir = '../results/UKDALE-RNN-lr=1e-5-2018-01-26 14:33:59'
+    results_dir = '../results/UKDALE-ACROSS-BUILDINGS-RNN-lr=1e-05-2018-02-03-11-48-12'
     train_logfile = os.path.join(results_dir, 'training.log')
     val_logfile = os.path.join(results_dir, 'validation.log')
     rnn = RNNDisaggregator(train_logfile, val_logfile, learning_rate, init=False)
 
     verts = []
     zs = []  # epochs
-    for z in np.arange(10, 301, 10):
+    for z in np.arange(10, 401, 10):
 
         # disaggregate model
         model = 'UKDALE-RNN-h1-kettle-{}epochs.h5'.format(z)
@@ -72,7 +72,7 @@ def generate_vertices():
     xs = np.arange(ys.shape[0])  # timestamps
 
     verts.append(list(zip(xs, ys)))  # add list of x-y-coordinates
-    zs.append(310)
+    zs.append(410)
 
     zs = np.asarray(zs)
 
@@ -109,9 +109,7 @@ def plot_prediction_over_epochs_plt():
     ax.view_init(-40,-94)
 
     # plt.savefig(os.path.join(results_dir, 'prediction_over_epochs.png'))
-    import pdb
     plt.show()
-    pdb.set_trace()
     print('ok')
 
 
@@ -261,7 +259,7 @@ def plot_datasets_meter():
     windows = {
         'train': [['25-6-2013 12:00:00', '26-6-2013']],
         'validation': ['13-6-2013', '13-7-2013'],
-        'test': ['15-9-2013 15:30:00', '15-9-2013 17:30:00']
+        'test': ['7-3-2014 09:40:00', '7-3-2014 10:05:00']
     }
 
     train = []
@@ -280,7 +278,7 @@ def plot_datasets_meter():
 
     train_buildings = [1]
     val_buildings = [1]
-    test_building = 1
+    test_building = 5
     sample_period = 6
     meter_key = 'kettle'
 
@@ -310,4 +308,4 @@ def plot_datasets_meter():
 
 
 if __name__ == "__main__":
-    plot_prediction_over_epochs_plt()
+    generate_vertices()
