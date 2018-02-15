@@ -310,7 +310,7 @@ def plot_datasets_meter():
 def plot_zoomed_predicted_energy_consumption():
     test = DataSet('../data/ukdale.h5')
     test.clear_cache()
-    test.set_window(start='13-7-2014', end='16-7-2014')
+    test.set_window(start='7-1-2014', end='7-4-2014')
 
     test_building = 5
     sample_period = 6
