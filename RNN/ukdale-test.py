@@ -9,8 +9,8 @@ import numpy as np
 
 from datetime import datetime
 from nilmtk import DataSet, HDFDataStore
-from .rnndisaggregator import RNNDisaggregator
-from .plots import plot_loss
+from rnndisaggregator import RNNDisaggregator
+from plots import plot_loss
 
 
 IMPORT = False
