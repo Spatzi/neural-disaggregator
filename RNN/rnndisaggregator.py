@@ -130,7 +130,7 @@ class RNNDisaggregator(Disaggregator):
         train_mainchunk = self.sliding_window_partitions(train_mainchunk, SEQUENCE_LENGTH, stride)
         train_meterchunk = self.sliding_window_partitions(train_meterchunk, SEQUENCE_LENGTH, stride)
 
-        batch_size = int(train_mainchunk.shape[0] / 10)
+        batch_size = int(train_mainchunk.shape[0] / 50)
 
         if self.std is None:
             rand_idx = random.randint(0, train_mainchunk.shape[0]-1)
