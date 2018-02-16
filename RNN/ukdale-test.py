@@ -13,7 +13,7 @@ from rnndisaggregator import RNNDisaggregator
 from plots import plot_loss
 
 
-IMPORT = False
+IMPORT = True
 
 windows = {
         'train': ["13-4-2013", "31-7-2013"],
@@ -40,7 +40,7 @@ meter_key = 'kettle'
 learning_rate = 1e-5
 
 if IMPORT:
-    results_dir = '../results/UKDALE-RNN-lr=1e-05-2018-01-28-12-01-34'  # TODO: insert directory name
+    results_dir = '../results/UKDALE-RNN-lr=1e-05-2018-02-16-18-52-34'  # TODO: insert directory name
 else:
     results_dir = '../results/UKDALE-RNN-lr={}-{}'.format(learning_rate, datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
     os.makedirs(results_dir)
@@ -75,14 +75,14 @@ val_logfile = os.path.join(results_dir, 'validation.log')
 
 if IMPORT:
     rnn = RNNDisaggregator(train_logfile, val_logfile, learning_rate, init=False)
-    rnn.import_model(os.path.join(results_dir, "UKDALE-RNN-h1-fridge-300epochs.h5"))  # TODO: insert last model name
+    rnn.import_model(os.path.join(results_dir, "UKDALE-RNN-kettle-60epochs.h5"))  # TODO: insert last model name
 else:
     rnn = RNNDisaggregator(train_logfile, val_logfile, learning_rate)
 
 print("========== TRAIN ============")
-epochs = 0  # TODO: update according to the last model if IMPORT = True
+epochs = 60  # TODO: update according to the last model if IMPORT = True
 start = time.time()
-for i in range(6):
+for i in range(4):
     rnn.train(train_mains, train_meter, validation_mains, validation_meter, epochs=10, sample_period=sample_period)
     epochs += 10
     rnn.export_model(os.path.join(results_dir, "UKDALE-RNN-{}-{}epochs.h5".format(meter_key, epochs)))
