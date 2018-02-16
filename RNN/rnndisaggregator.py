@@ -15,7 +15,8 @@ from keras.optimizers import Adam
 from nilmtk.disaggregate import Disaggregator
 
 
-SEQUENCE_LENGTH = 1024
+SEQUENCE_LENGTH = 128
+OVERLAPPING = 0.8
 
 
 class RNNDisaggregator(Disaggregator):
@@ -120,12 +121,14 @@ class RNNDisaggregator(Disaggregator):
 
         # shape should be determined according to the target appliance
         # truncate dataset if necessary
-        if train_mainchunk.shape[0] % SEQUENCE_LENGTH != 0:
-            length = int(train_mainchunk.shape[0] / SEQUENCE_LENGTH) * SEQUENCE_LENGTH
+        stride = int(SEQUENCE_LENGTH * (1 - OVERLAPPING))
+        if (train_mainchunk.shape[0] - SEQUENCE_LENGTH) % stride != 0:
+            length = int((train_mainchunk.shape[0] - SEQUENCE_LENGTH) / stride) * stride
+            length += SEQUENCE_LENGTH
             train_mainchunk = train_mainchunk[:length]
             train_meterchunk = train_meterchunk[:length]
-        train_mainchunk = np.reshape(train_mainchunk, (-1, SEQUENCE_LENGTH, 1))
-        train_meterchunk = np.reshape(train_meterchunk, (-1, SEQUENCE_LENGTH, 1))
+        train_mainchunk = self.sliding_window_partitions(train_mainchunk, SEQUENCE_LENGTH, stride)
+        train_meterchunk = self.sliding_window_partitions(train_meterchunk, SEQUENCE_LENGTH, stride)
 
         batch_size = int(train_mainchunk.shape[0] / 10)
 
@@ -256,12 +259,14 @@ class RNNDisaggregator(Disaggregator):
 
             # shape should be determined according to the target appliance
             # truncate dataset if necessary
-            if train_mainchunks[i].shape[0] % SEQUENCE_LENGTH != 0:
-                length = int(train_mainchunks[i].shape[0] / SEQUENCE_LENGTH) * SEQUENCE_LENGTH
+            stride = int(SEQUENCE_LENGTH * (1 - OVERLAPPING))
+            if (train_mainchunks[i].shape[0] - SEQUENCE_LENGTH) % stride != 0:
+                length = int((train_mainchunks[i].shape[0] - SEQUENCE_LENGTH) / stride) * stride
+                length += SEQUENCE_LENGTH
                 train_mainchunks[i] = train_mainchunks[i][:length]
                 train_meterchunks[i] = train_meterchunks[i][:length]
-            train_mainchunks[i] = np.reshape(train_mainchunks[i], (-1, SEQUENCE_LENGTH, 1))
-            train_meterchunks[i] = np.reshape(train_meterchunks[i], (-1, SEQUENCE_LENGTH, 1))
+            train_mainchunks[i] = self.sliding_window_partitions(train_mainchunks[i], SEQUENCE_LENGTH, stride)
+            train_meterchunks[i] = self.sliding_window_partitions(train_meterchunks[i], SEQUENCE_LENGTH, stride)
 
         all_train_mainchunks = np.concatenate([train_mainchunks[i] for i in range(train_num_meters)])
         all_train_meterchunks = np.concatenate([train_meterchunks[i] for i in range(train_num_meters)])
@@ -581,3 +586,10 @@ class RNNDisaggregator(Disaggregator):
             writer = csv.writer(csvfile, delimiter=',')
             for i, j in zip(range(last_index, last_index + len(loss)), loss):
                 writer.writerow([i, j])
+
+    @staticmethod
+    def sliding_window_partitions(a, L, S):  # Window len = L, Stride len/stepsize = S
+        nrows = ((a.size - L) // S) + 1
+        n = a.strides[0]
+        a = np.lib.stride_tricks.as_strided(a, shape=(nrows, L), strides=(S * n, n))
+        return np.reshape(a, (a.shape[0], a.shape[1], 1))
