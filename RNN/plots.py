@@ -256,10 +256,15 @@ def plot_loss(train_logfile, val_logfile, results_dir, best_epoch=None, test_los
 
 def plot_datasets_meter():
 
+    # windows = {
+    #     'train': [["21-5-2013", "21-8-2013"]],
+    #     'validation': ["9-10-2013", "10-10-2013"],
+    #     'test': ["11-1-2013", "15-11-2013"]
+    # }
     windows = {
-        'train': [['25-6-2013 12:00:00', '26-6-2013']],
-        'validation': ['13-6-2013', '13-7-2013'],
-        'test': ['27-7-2013 18:00:00', '27-7-2013 21:00:00']
+        'train': [['1-1-2014', '15-4-2014']],
+        'validation': ['15-4-2014', '15-5-2014'],
+        'test': ['15-5-2014', '30-5-2014']
     }
 
     train = []
@@ -278,7 +283,7 @@ def plot_datasets_meter():
 
     train_buildings = [1]
     val_buildings = [1]
-    test_building = 2
+    test_building = 1
     sample_period = 6
     meter_key = 'dish washer'
 
@@ -372,4 +377,4 @@ def plot_zoomed_predicted_energy_consumption():
 
 
 if __name__ == "__main__":
-    plot_zoomed_predicted_energy_consumption()
+    plot_datasets_meter()
