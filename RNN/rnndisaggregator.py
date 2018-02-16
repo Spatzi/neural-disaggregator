@@ -15,7 +15,7 @@ from keras.optimizers import Adam
 from nilmtk.disaggregate import Disaggregator
 
 
-SEQUENCE_LENGTH = 128
+SEQUENCE_LENGTH = 1024
 
 
 class RNNDisaggregator(Disaggregator):
