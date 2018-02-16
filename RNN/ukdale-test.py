@@ -16,9 +16,9 @@ from .plots import plot_loss
 IMPORT = False
 
 windows = {
-    'train': ['2-1-2014', '15-5-2014'],
-    'validation': ['15-5-2014', '15-6-2014'],
-    'test': ['15-6-2014', '30-6-2014']
+        'train': ['1-1-2014', '15-4-2014'],
+        'validation': ['15-4-2014', '15-5-2014'],
+        'test': ['15-5-2014', '30-5-2014']
 }
 
 print("========== OPEN DATASETS ============")
@@ -36,8 +36,8 @@ train_building = 1
 validation_building = 1
 test_building = 1
 sample_period = 6
-meter_key = 'fridge'
-learning_rate = 1e-6
+meter_key = 'dish washer'
+learning_rate = 1e-5
 
 if IMPORT:
     results_dir = '../results/UKDALE-RNN-lr=1e-05-2018-01-28-12-01-34'  # TODO: insert directory name
@@ -81,7 +81,7 @@ else:
 print("========== TRAIN ============")
 epochs = 0  # TODO: update according to the last model if IMPORT = True
 start = time.time()
-for i in range(60):
+for i in range(30):
     rnn.train(train_mains, train_meter, validation_mains, validation_meter, epochs=10, sample_period=sample_period)
     epochs += 10
     rnn.export_model(os.path.join(results_dir, "UKDALE-RNN-{}-{}epochs.h5".format(meter_key, epochs)))
