@@ -16,10 +16,10 @@ from plots import plot_loss
 IMPORT = False
 
 windows = {
-        'train': ['1-1-2014', '15-4-2014'],
-        'validation': ['15-4-2014', '15-5-2014'],
-        'test': ['15-5-2014', '30-5-2014']
-}
+        'train': ["21-5-2013", "9-1-2013"],
+        'validation': ["9-1-2013", "29-9-2013"],
+        'test': ['29-9-2013', '10-10-2013']
+    }
 
 print("========== OPEN DATASETS ============")
 train = DataSet('../data/ukdale.h5')
@@ -32,9 +32,9 @@ test = DataSet('../data/ukdale.h5')
 test.clear_cache()
 test.set_window(start=windows['test'][0], end=windows['test'][1])
 
-train_building = 1
-validation_building = 1
-test_building = 1
+train_building = 2
+validation_building = 2
+test_building = 2
 sample_period = 6
 meter_key = 'dish washer'
 learning_rate = 1e-5
