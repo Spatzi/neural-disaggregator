@@ -257,14 +257,15 @@ def plot_loss(train_logfile, val_logfile, results_dir, best_epoch=None, test_los
 def plot_datasets_meter():
 
     # windows = {
-    #     'train': [["21-5-2013", "21-8-2013"]],
-    #     'validation': ["9-10-2013", "10-10-2013"],
-    #     'test': ["11-1-2013", "15-11-2013"]
+    #     'train': [["13-4-2013", "31-7-2013"]],
+    #     'validation': ["31-7-2013", "31-8-2013"],
+    #     'test': ["31-8-2013", "13-9-2013"]
     # }
+
     windows = {
-        'train': [["21-5-2013", "9-1-2013"]],
-        'validation': ["9-1-2013", "29-9-2013"],
-        'test': ['29-9-2013', '10-10-2013']
+        'train': [["13-4-2013", "31-7-2013"]],
+        'validation': ["31-7-2013", "31-8-2013"],
+        'test': ["7-1-2014", "20-10-2014"]
     }
 
     train = []
@@ -281,9 +282,9 @@ def plot_datasets_meter():
     test.clear_cache()
     test.set_window(start=windows['test'][0], end=windows['test'][1])
 
-    train_buildings = [2]
-    val_buildings = [2]
-    test_building = 2
+    train_buildings = [1]
+    val_buildings = [1]
+    test_building = 5
     sample_period = 6
     meter_key = 'dish washer'
 
