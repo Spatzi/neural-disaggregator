@@ -81,9 +81,9 @@ else:
 print("========== TRAIN ============")
 epochs = 0  # TODO: update according to the last model if IMPORT = True
 start = time.time()
-for i in range(30):
-    rnn.train(train_mains, train_meter, validation_mains, validation_meter, epochs=10, sample_period=sample_period)
-    epochs += 10
+for i in range(1):
+    rnn.train(train_mains, train_meter, validation_mains, validation_meter, epochs=1, sample_period=sample_period)
+    epochs += 1
     rnn.export_model(os.path.join(results_dir, "UKDALE-RNN-{}-{}epochs.h5".format(meter_key, epochs)))
     plot_loss(train_logfile, val_logfile, results_dir)
     print("CHECKPOINT {}".format(epochs))
