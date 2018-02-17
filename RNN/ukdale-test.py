@@ -24,7 +24,7 @@ IMPORT = False
 windows = {
     'train': ["13-4-2013", "31-7-2013"],
     'validation': ["31-7-2013", "31-8-2013"],
-    'test': ["31-8-2013", "13-9-2013"]
+    'test': ["7-1-2014", "20-10-2014"]
 }
 
 print("========== OPEN DATASETS ============")
@@ -40,7 +40,7 @@ test.set_window(start=windows['test'][0], end=windows['test'][1])
 
 train_building = 1
 validation_building = 1
-test_building = 1
+test_building = 5
 sample_period = 6
 meter_key = 'dish washer'
 learning_rate = 1e-5
