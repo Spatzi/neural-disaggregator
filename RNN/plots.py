@@ -317,17 +317,17 @@ def plot_datasets_meter():
 def plot_zoomed_predicted_energy_consumption():
     train = DataSet('../data/ukdale.h5')
     train.clear_cache()
-    train.set_window(start="21-5-2013", end="9-1-2013")
+    train.set_window(start="13-4-2013", end="31-7-2013")
     test = DataSet('../data/ukdale.h5')
     test.clear_cache()
-    test.set_window(start='10-3-2013 20:00:00', end='10-4-2013 04:00:00')
+    test.set_window(start='16-9-2013', end='17-9-2013')
 
-    train_building = 2
-    test_building = 2
+    train_building = 1
+    test_building = 1
     sample_period = 6
-    meter_key = 'dish washer'
+    meter_key = 'kettle'
     learning_rate = 1e-5
-    best_epoch = 300
+    best_epoch = 140
 
     train_elec = train.buildings[train_building].elec
     test_elec = test.buildings[test_building].elec
@@ -335,12 +335,12 @@ def plot_zoomed_predicted_energy_consumption():
     train_meter = train_elec.submeters()[meter_key]
     test_mains = test_elec.mains()
 
-    results_dir = '../results/UKDALE-RNN-lr=1e-05-2018-02-16-12-29-50'
+    results_dir = '../results/UKDALE-RNN-lr=1e-05-2018-02-16-18-52-34'
     train_logfile = os.path.join(results_dir, 'training.log')
     val_logfile = os.path.join(results_dir, 'validation.log')
     rnn = RNNDisaggregator(train_logfile, val_logfile, learning_rate, init=False)
 
-    model = 'UKDALE-RNN-dish washer-{}epochs.h5'.format(best_epoch)
+    model = 'UKDALE-RNN-kettle-{}epochs.h5'.format(best_epoch)
     rnn.import_model(os.path.join(results_dir, model))
     disag_filename = 'disag-out-{}epochs.h5'.format(best_epoch)
     output = HDFDataStore(os.path.join(results_dir, disag_filename), 'w')
