@@ -264,7 +264,7 @@ def plot_datasets_meter():
     windows = {
         'train': [["21-5-2013", "9-1-2013"]],
         'validation': ["9-1-2013", "29-9-2013"],
-        'test': ['29-9-2013', '10-10-2013']
+        'test': ["15-7-2014", "15-8-2014"] #5
     }
 
     train = []
@@ -283,7 +283,7 @@ def plot_datasets_meter():
 
     train_buildings = [2]
     val_buildings = [2]
-    test_building = 2
+    test_building = 5
     sample_period = 6
     meter_key = 'dish washer'
 
