@@ -26,6 +26,18 @@ windows = {
 #     'test': ['13-9-2013', '30-9-2013']
 # }
 
+# b1
+# windows = {
+#     'train': [["13-4-2013", "31-7-2013"]],
+#     'validation': ["31-7-2013", "31-8-2013"],
+#     'test': ["31-8-2013", "13-9-2013"]
+# }
+
+windows = {
+
+    'test': ["7-1-2014", "20-10-2014"]
+}
+
 train = []
 print("========== OPEN DATASETS ============")
 for window in windows['train']:
@@ -49,7 +61,7 @@ train_buildings = [1,2]
 val_buildings = [4]
 test_building = 5
 sample_period = 6
-meter_key = 'fridge'
+meter_key = 'dishh washer'
 learning_rate = 1e-5
 
 if IMPORT:

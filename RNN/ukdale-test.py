@@ -15,11 +15,17 @@ from plots import plot_loss
 
 IMPORT = False
 
+# windows = { b2
+#         'train': ["21-5-2013", "9-1-2013"],
+#         'validation': ["9-1-2013", "29-9-2013"],
+#         'test': ['29-9-2013', '10-10-2013']
+#     }
+
 windows = {
-        'train': ["21-5-2013", "9-1-2013"],
-        'validation': ["9-1-2013", "29-9-2013"],
-        'test': ['29-9-2013', '10-10-2013']
-    }
+    'train': ["13-4-2013", "31-7-2013"],
+    'validation': ["31-7-2013", "31-8-2013"],
+    'test': ["31-8-2013", "13-9-2013"]
+}
 
 print("========== OPEN DATASETS ============")
 train = DataSet('../data/ukdale.h5')
@@ -32,9 +38,9 @@ test = DataSet('../data/ukdale.h5')
 test.clear_cache()
 test.set_window(start=windows['test'][0], end=windows['test'][1])
 
-train_building = 2
-validation_building = 2
-test_building = 2
+train_building = 1
+validation_building = 1
+test_building = 1
 sample_period = 6
 meter_key = 'dish washer'
 learning_rate = 1e-5
@@ -81,9 +87,9 @@ else:
 print("========== TRAIN ============")
 epochs = 0  # TODO: update according to the last model if IMPORT = True
 start = time.time()
-for i in range(30):
-    rnn.train(train_mains, train_meter, validation_mains, validation_meter, epochs=10, sample_period=sample_period)
-    epochs += 10
+for i in range(1):
+    rnn.train(train_mains, train_meter, validation_mains, validation_meter, epochs=1, sample_period=sample_period)
+    epochs += 1
     rnn.export_model(os.path.join(results_dir, "UKDALE-RNN-{}-{}epochs.h5".format(meter_key, epochs)))
     plot_loss(train_logfile, val_logfile, results_dir)
     print("CHECKPOINT {}".format(epochs))
