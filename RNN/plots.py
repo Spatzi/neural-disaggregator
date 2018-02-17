@@ -320,7 +320,7 @@ def plot_zoomed_predicted_energy_consumption():
     train.set_window(start="13-4-2013", end="31-7-2013")
     test = DataSet('../data/ukdale.h5')
     test.clear_cache()
-    test.set_window(start='16-9-2013 15:00:00', end='16-9-2013 20:00:00')
+    test.set_window(start='16-9-2013 16:00:00', end='16-9-2013 18:00:00')
 
     train_building = 1
     test_building = 1
