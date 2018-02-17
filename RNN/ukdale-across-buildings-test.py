@@ -15,9 +15,9 @@ from plots import plot_loss
 IMPORT = False  # TODO: True if continue training
 
 windows = {
-    'train': [['2-1-2014', '15-5-2014'], ['30-3-2013', '15-7-2013']],
-    'validation': ['13-4-2013', '13-6-2013'],
-    'test': ['30-6-2014', '30-7-2014']
+    'train': [["13-4-2013", "31-7-2013"], ["21-5-2013", "9-1-2013"]],
+    'validation': [["31-7-2013", "31-8-2013"], ["9-1-2013", "29-9-2013"]],
+    'test': ["15-7-2014", "15-8-2014"]
 }
 
 # windows = {
@@ -25,18 +25,6 @@ windows = {
 #     'validation': ['13-4-2013', '13-6-2013'],
 #     'test': ['13-9-2013', '30-9-2013']
 # }
-
-# b1
-# windows = {
-#     'train': [["13-4-2013", "31-7-2013"]],
-#     'validation': ["31-7-2013", "31-8-2013"],
-#     'test': ["31-8-2013", "13-9-2013"]
-# }
-
-windows = {
-
-    'test': ["7-1-2014", "20-10-2014"]
-}
 
 train = []
 print("========== OPEN DATASETS ============")
@@ -46,9 +34,14 @@ for window in windows['train']:
     t.set_window(start=window[0], end=window[1])
     train += [t]
 
-validation = DataSet('../data/ukdale.h5')
-validation.clear_cache()
-validation.set_window(start=windows['validation'][0], end=windows['validation'][1])
+validation = []
+print("========== OPEN DATASETS ============")
+for window in windows['validation']:
+    v = DataSet('../data/ukdale.h5')
+    v.clear_cache()
+    v.set_window(start=window[0], end=window[1])
+    validation += [v]
+
 test = DataSet('../data/ukdale.h5')
 test.clear_cache()
 test.set_window(start=windows['test'][0], end=windows['test'][1])
@@ -58,10 +51,10 @@ train_meterlist = []
 val_mainslist = []
 val_meterlist = []
 train_buildings = [1,2]
-val_buildings = [4]
+val_buildings = [1,2]
 test_building = 5
 sample_period = 6
-meter_key = 'dishh washer'
+meter_key = 'dish washer'
 learning_rate = 1e-5
 
 if IMPORT:
@@ -75,7 +68,8 @@ with open(results_file, "w") as text_file:
     text_file.write('========== PARAMETERS ============' + '\n')
     for window in windows['train']:
         text_file.write('train window: ({}, {})\n'.format(window[0], window[1]))
-    text_file.write('validation window: ({}, {})\n'.format(windows['validation'][0], windows['validation'][1]))
+    for window in windows['validation']:
+        text_file.write('validation window: ({}, {})\n'.format(window[0], window[1]))
     text_file.write('test window: ({}, {})\n'.format(windows['test'][0], windows['test'][1]))
     text_file.write('train buildings: {}\n'.format(train_buildings))
     text_file.write('validation buildings: {}\n'.format(val_buildings))
@@ -92,8 +86,8 @@ for i, b in enumerate(train_buildings):
     train_mainslist += [train_mains]
     train_meterlist += [train_meter]
 
-for i in val_buildings:
-    val_elec = validation.buildings[i].elec
+for i, b in enumerate(val_buildings):
+    val_elec = validation[i].buildings[b].elec
     val_meter = val_elec.submeters()[meter_key]
     val_mains = val_elec.mains()
 
