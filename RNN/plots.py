@@ -256,6 +256,7 @@ def plot_loss(train_logfile, val_logfile, results_dir, best_epoch=None, test_los
 
 def plot_datasets_meter():
 
+    # b1
     # windows = {
     #     'train': [["13-4-2013", "31-7-2013"]],
     #     'validation': ["31-7-2013", "31-8-2013"],
@@ -316,17 +317,17 @@ def plot_datasets_meter():
 def plot_zoomed_predicted_energy_consumption():
     train = DataSet('../data/ukdale.h5')
     train.clear_cache()
-    train.set_window(start="2-1-2014", end="15-5-2014")
+    train.set_window(start="21-5-2013", end="9-1-2013")
     test = DataSet('../data/ukdale.h5')
     test.clear_cache()
-    test.set_window(start='25-6-2014 20:00:00', end='26-6-2014 04:00:00')
+    test.set_window(start='30-9-2013 12:00:00', end='10-1-2013')
 
-    train_building = 1
-    test_building = 1
+    train_building = 2
+    test_building = 2
     sample_period = 6
-    meter_key = 'fridge'
+    meter_key = 'dish washer'
     learning_rate = 1e-5
-    best_epoch = 560
+    best_epoch = 300
 
     train_elec = train.buildings[train_building].elec
     test_elec = test.buildings[test_building].elec
@@ -334,12 +335,12 @@ def plot_zoomed_predicted_energy_consumption():
     train_meter = train_elec.submeters()[meter_key]
     test_mains = test_elec.mains()
 
-    results_dir = '../results/UKDALE-RNN-lr=1e-05-2018-01-28-12-01-34'
+    results_dir = '../results/UKDALE-RNN-lr=1e-05-2018-02-16-12-29-50'
     train_logfile = os.path.join(results_dir, 'training.log')
     val_logfile = os.path.join(results_dir, 'validation.log')
     rnn = RNNDisaggregator(train_logfile, val_logfile, learning_rate, init=False)
 
-    model = 'UKDALE-RNN-fridge-{}epochs.h5'.format(best_epoch)
+    model = 'UKDALE-RNN-dish washer-{}epochs.h5'.format(best_epoch)
     rnn.import_model(os.path.join(results_dir, model))
     disag_filename = 'disag-out-{}epochs.h5'.format(best_epoch)
     output = HDFDataStore(os.path.join(results_dir, disag_filename), 'w')
@@ -378,4 +379,4 @@ def plot_zoomed_predicted_energy_consumption():
 
 
 if __name__ == "__main__":
-    plot_datasets_meter()
+    plot_zoomed_predicted_energy_consumption()
