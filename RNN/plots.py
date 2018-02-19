@@ -405,6 +405,8 @@ def plot_zoomed_original_predicted_energy_consumption():
     predicted.fillna(0, inplace=True)
     y1 = np.array(predicted)  # power
     x1 = np.arange(y1.shape[0])  # timestamps
+    x1 = x1[90000:11000]
+    y1 = y1[90000:11000]
 
     ground_truth = test_elec[meter_key]
     ground_truth = ground_truth.power_series(sample_period=sample_period)
@@ -412,6 +414,8 @@ def plot_zoomed_original_predicted_energy_consumption():
     ground_truth.fillna(0, inplace=True)
     y2 = np.array(ground_truth)  # power
     x2 = np.arange(y2.shape[0])  # timestamps
+    x2 = x2[90000:11000]
+    y2 = y2[90000:11000]
 
     fig, (ax1, ax2, ax3) = plt.subplots(3, sharex=True, sharey=True)
     ax1.plot(x1, y1, color='r', label='predicted')
