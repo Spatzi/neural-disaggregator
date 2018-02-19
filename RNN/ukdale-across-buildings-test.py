@@ -15,9 +15,9 @@ from plots import plot_loss
 IMPORT = False  # TODO: True if continue training
 
 windows = {
-        'train': [["13-4-2013", "20-4-2013"], ["13-4-2013", "20-4-2013"]],
-        'validation': ["20-4-2013", "22-4-2013"],
-        'test': ["22-4-2013", "23-4-2013"]
+        'train': [["13-4-2013", "6-7-2013"], ["13-4-2013", "6-7-2013"]],
+        'validation': ["6-7-2013", "21-6-2013"],
+        'test': ["24-7-2014", "31-7-2014"]
     }
 
 # windows = {
@@ -45,9 +45,9 @@ train_mainslist = []
 train_meterlist = []
 val_mainslist = []
 val_meterlist = []
-train_buildings = [1,1]
-val_buildings = [1,1]
-test_building = 1
+train_buildings = [1,2]
+val_buildings = [1,2]
+test_building = 5
 sample_period = 6
 meter_keys = ['kettle', 'microwave']
 learning_rate = 1e-5
