@@ -13,12 +13,12 @@ from rnndisaggregator import RNNDisaggregator
 from plots import plot_loss
 
 
-IMPORT = True
+IMPORT = False
 
 windows = {
-        'train': ["13-4-2013", "31-7-2013"],
-        'validation': ["31-7-2013", "31-8-2013"],
-        'test': ["13-9-2013", "30-9-2013"]
+        'train': ["13-4-2013", "20-4-2013"],
+        'validation': ["20-4-2013", "22-4-2013"],
+        'test': ["22-4-2013", "23-4-2013"]
     }
 
 print("========== OPEN DATASETS ============")
@@ -36,7 +36,7 @@ train_building = 1
 validation_building = 1
 test_building = 1
 sample_period = 6
-meter_key = 'kettle'
+meter_keys = ['kettle', 'microwave']
 learning_rate = 1e-5
 
 if IMPORT:
@@ -54,7 +54,7 @@ with open(results_file, "w") as text_file:
     text_file.write('train building: {}\n'.format(train_building))
     text_file.write('validation building: {}\n'.format(validation_building))
     text_file.write('test building: {}\n'.format(test_building))
-    text_file.write('appliance: {}\n'.format(meter_key))
+    text_file.write('appliances: {}\n'.format(meter_keys))
     text_file.write('sample period: {}\n'.format(sample_period))
     text_file.write('learning rate: {}\n'.format(learning_rate))
 
@@ -62,9 +62,13 @@ train_elec = train.buildings[train_building].elec
 validation_elec = validation.buildings[validation_building].elec
 test_elec = test.buildings[test_building].elec
 
-train_meter = train_elec.submeters()[meter_key]
-validation_meter = validation_elec.submeters()[meter_key]
-test_meter = test_elec.submeters()[meter_key]
+train_meters = []
+validation_meters = []
+test_meters = []
+for key in meter_keys:
+    train_meters += [train_elec.submeters()[key]]
+    validation_meters += [validation_elec.submeters()[key]]
+    test_meters += [test_elec.submeters()[key]]
 
 train_mains = train_elec.mains()
 validation_mains = validation_elec.mains()
@@ -80,12 +84,12 @@ else:
     rnn = RNNDisaggregator(train_logfile, val_logfile, learning_rate)
 
 print("========== TRAIN ============")
-epochs = 100  # TODO: update according to the last model if IMPORT = True
+epochs = 0  # TODO: update according to the last model if IMPORT = True
 start = time.time()
-for i in range(5):
-    rnn.train(train_mains, train_meter, validation_mains, validation_meter, epochs=10, sample_period=sample_period)
-    epochs += 10
-    rnn.export_model(os.path.join(results_dir, "UKDALE-RNN-{}-{}epochs.h5".format(meter_key, epochs)))
+for i in range(1):
+    rnn.train(train_mains, train_meters, validation_mains, validation_meters, epochs=1, sample_period=sample_period)
+    epochs += 1
+    rnn.export_model(os.path.join(results_dir, "UKDALE-RNN-{}-{}epochs.h5".format(meter_keys, epochs)))
     plot_loss(train_logfile, val_logfile, results_dir)
     print("CHECKPOINT {}".format(epochs))
 end = time.time()
@@ -102,8 +106,8 @@ epochs = np.array(validation.as_matrix()[:,0], dtype='int')
 loss = np.array(validation.as_matrix()[:,1], dtype='float32')
 argmin = np.argmin(loss)
 best_epoch = epochs[argmin] + 1
-rnn.import_model(os.path.join(results_dir, "UKDALE-RNN-{}-{}epochs.h5".format(meter_key, best_epoch)))
-test_loss = rnn.evaluate(test_mains, test_meter, sample_period=sample_period)
+rnn.import_model(os.path.join(results_dir, "UKDALE-RNN-{}-{}epochs.h5".format(meter_keys, best_epoch)))
+test_loss = rnn.evaluate(test_mains, test_meters, sample_period=sample_period)
 line = 'Test loss: {}'.format(test_loss)
 with open(results_file, "a") as text_file:
     text_file.write(line + '\n')
@@ -111,7 +115,7 @@ print(line)
 
 disag_filename = 'disag-out.h5'
 output = HDFDataStore(os.path.join(results_dir, disag_filename), 'w')
-rnn.disaggregate(test_mains, output, results_file, train_meter, sample_period=sample_period)
+rnn.disaggregate(test_mains, output, results_file, train_meters, sample_period=sample_period)
 output.close()
 
 print("========== PLOTS ============")
@@ -119,15 +123,15 @@ print("========== PLOTS ============")
 plot_loss(train_logfile, val_logfile, results_dir, best_epoch, test_loss)
 
 # plot predicted energy consumption
-result = DataSet(os.path.join(results_dir, disag_filename))
-res_elec = result.buildings[test_building].elec
-predicted = res_elec[meter_key]
-ground_truth = test_elec[meter_key]
-fig, (ax1, ax2, ax3) = plt.subplots(3, sharex=True, sharey=True)
-predicted.plot(ax=ax1, plot_kwargs={'color': 'r', 'label': 'predicted'})
-ground_truth.plot(ax=ax1, plot_kwargs={'color': 'b', 'label': 'ground truth'})
-predicted.plot(ax=ax2, plot_kwargs={'color': 'r', 'label': 'predicted'}, plot_legend=False)
-ground_truth.plot(ax=ax3, plot_kwargs={'color': 'b', 'label': 'ground truth'}, plot_legend=False)
-ax1.set_title('Appliance: {}'.format(meter_key))
-fig.legend()
-fig.savefig(os.path.join(results_dir, 'predicted_vs_ground_truth.png'))
+# result = DataSet(os.path.join(results_dir, disag_filename))
+# res_elec = result.buildings[test_building].elec
+# predicted = res_elec[meter_key]
+# ground_truth = test_elec[meter_key]
+# fig, (ax1, ax2, ax3) = plt.subplots(3, sharex=True, sharey=True)
+# predicted.plot(ax=ax1, plot_kwargs={'color': 'r', 'label': 'predicted'})
+# ground_truth.plot(ax=ax1, plot_kwargs={'color': 'b', 'label': 'ground truth'})
+# predicted.plot(ax=ax2, plot_kwargs={'color': 'r', 'label': 'predicted'}, plot_legend=False)
+# ground_truth.plot(ax=ax3, plot_kwargs={'color': 'b', 'label': 'ground truth'}, plot_legend=False)
+# ax1.set_title('Appliance: {}'.format(meter_key))
+# fig.legend()
+# fig.savefig(os.path.join(results_dir, 'predicted_vs_ground_truth.png'))

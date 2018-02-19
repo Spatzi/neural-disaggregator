@@ -17,6 +17,7 @@ from nilmtk.disaggregate import Disaggregator
 
 SEQUENCE_LENGTH = 128
 OVERLAPPING = 0.8
+NUMBER_OF_TARGETS = 2
 
 
 class RNNDisaggregator(Disaggregator):
@@ -26,7 +27,7 @@ class RNNDisaggregator(Disaggregator):
     Attributes
     ----------
     model: Keras Sequential model.
-    mmax: The maximum value of the aggregate data.
+    mmax: The maximum value of the aggregate data (per appliance).
     std: The standard deviation of a random sequence sample to normalize the input.
     MIN_CHUNK_LENGTH: The minimum length of an acceptable chunk.
     total_epochs: total amount of updating steps so far.
@@ -55,52 +56,65 @@ class RNNDisaggregator(Disaggregator):
             self.init_logfile(train_logfile)
             self.init_logfile(val_logfile)
 
-    def train(self, train_mains, train_meter, validation_mains, validation_meter, epochs=1, **load_kwargs):
+    def train(self, train_mains, train_meters, validation_mains, validation_meters, epochs=1, **load_kwargs):
         """
         Train model.
 
         :param train_mains: nilmtk.ElecMeter object for the training aggregate data.
-        :param train_meter: nilmtk.ElecMeter object for the training meter data.
+        :param train_meters: List of nilmtk.ElecMeter objects for the training meter data.
         :param validation_mains: nilmtk.ElecMeter object for the validation aggregate data.
-        :param validation_meter: nilmtk.ElecMeter object for the validation meter data.
+        :param validation_meters: List of nilmtk.ElecMeter objects for the validation meter data.
         :param epochs: Number of epochs to train.
         :param load_kwargs: Keyword arguments passed to train_meter.power_series()
         """
 
         train_main_power_series = train_mains.power_series(**load_kwargs)
-        train_meter_power_series = train_meter.power_series(**load_kwargs)
+        train_meter_power_series = []
+        for train_meter in train_meters:
+            train_meter_power_series += [train_meter.power_series(**load_kwargs)]
         val_main_power_series = validation_mains.power_series(**load_kwargs)
-        val_meter_power_series = validation_meter.power_series(**load_kwargs)
+        val_meter_power_series = []
+        for validation_meter in validation_meters:
+            val_meter_power_series += [validation_meter.power_series(**load_kwargs)]
 
         # train chunks
         train_mainchunk = next(train_main_power_series)
-        train_meterchunk = next(train_meter_power_series)
+        train_meterchunks = []
+        for power_series in train_meter_power_series:
+            train_meterchunks += [next(power_series)]
         val_mainchunk = next(val_main_power_series)
-        val_meterchunk = next(val_meter_power_series)
+        val_meterchunks = []
+        for power_series in val_meter_power_series:
+            val_meterchunks += [next(power_series)]
+
         if self.mmax is None:
-            self.mmax = train_meterchunk.max()
+            self.mmax = [meterchunk.max() for meterchunk in train_meterchunks]
 
         run = True
         while run:
-            self.train_on_chunk(train_mainchunk, train_meterchunk, val_mainchunk, val_meterchunk, epochs)
+            self.train_on_chunk(train_mainchunk, train_meterchunks, val_mainchunk, val_meterchunks, epochs)
             try:
                 # TODO: make this right!
                 train_mainchunk = next(train_main_power_series)
-                train_meterchunk = next(train_meter_power_series)
+                train_meterchunks = []
+                for power_series in train_meter_power_series:
+                    train_meterchunks += [next(power_series)]
                 val_mainchunk = next(val_main_power_series)
-                val_meterchunk = next(val_meter_power_series)
+                val_meterchunks = []
+                for power_series in val_meter_power_series:
+                    val_meterchunks += [next(power_series)]
                 print('THERE ARE MORE CHUNKS')
             except:
                 run = False
 
-    def train_on_chunk(self, train_mainchunk, train_meterchunk, val_mainchunk, val_meterchunk, epochs):
+    def train_on_chunk(self, train_mainchunk, train_meterchunks, val_mainchunk, val_meterchunks, epochs):
         """
         Train using only one chunk.
 
         :param train_mainchunk: Training chunk of site meter.
-        :param train_meterchunk: Training chunk of appliance.
+        :param train_meterchunks: Training chunks of appliances.
         :param val_mainchunk: Validation chunk of site meter.
-        :param val_meterchunk: Validation chunk of appliance.
+        :param val_meterchunks: Validation chunks of appliances.
         :param epochs: Number of epochs to train.
         """
 
@@ -113,11 +127,15 @@ class RNNDisaggregator(Disaggregator):
         """
 
         # replace NaNs with 0s
+        ix = 0
         train_mainchunk.fillna(0, inplace=True)
-        train_meterchunk.fillna(0, inplace=True)
-        ix = train_mainchunk.index.intersection(train_meterchunk.index)
-        train_mainchunk = np.array(train_mainchunk[ix])
-        train_meterchunk = np.array(train_meterchunk[ix])
+        for meterchunk in train_meterchunks:
+            meterchunk.fillna(0, inplace=True)
+            ix = train_mainchunk.index.intersection(meterchunk.index)
+            train_mainchunk = train_mainchunk[ix]
+        train_mainchunk = np.array(train_mainchunk)
+        for i, meterchunk in enumerate(train_meterchunks):
+            train_meterchunks[i] = np.array(meterchunk[ix])
 
         # shape should be determined according to the target appliance
         # truncate dataset if necessary
@@ -126,9 +144,11 @@ class RNNDisaggregator(Disaggregator):
             length = int((train_mainchunk.shape[0] - SEQUENCE_LENGTH) / stride) * stride
             length += SEQUENCE_LENGTH
             train_mainchunk = train_mainchunk[:length]
-            train_meterchunk = train_meterchunk[:length]
+            for i, meterchunk in enumerate(train_meterchunks):
+                train_meterchunks[i] = meterchunk[:length]
         train_mainchunk = self.sliding_window_partitions(train_mainchunk, SEQUENCE_LENGTH, stride)
-        train_meterchunk = self.sliding_window_partitions(train_meterchunk, SEQUENCE_LENGTH, stride)
+        for i, meterchunk in enumerate(train_meterchunks):
+            train_meterchunks[i] = self.sliding_window_partitions(meterchunk, SEQUENCE_LENGTH, stride)
 
         batch_size = int(train_mainchunk.shape[0] / 50)
 
@@ -140,31 +160,39 @@ class RNNDisaggregator(Disaggregator):
                 self.std = train_mainchunk[rand_idx].std()
 
         train_mainchunk = self._normalize(train_mainchunk)
-        train_meterchunk = self._normalize_targets(train_meterchunk)
+        train_meterchunks = self._normalize_targets(train_meterchunks)
+        train_meterchunks = np.dstack(train_meterchunks)
 
         # replace NaNs with 0s
+        ix = 0
         val_mainchunk.fillna(0, inplace=True)
-        val_meterchunk.fillna(0, inplace=True)
-        ix = val_mainchunk.index.intersection(val_meterchunk.index)
-        val_mainchunk = np.array(val_mainchunk[ix])
-        val_meterchunk = np.array(val_meterchunk[ix])
+        for meterchunk in val_meterchunks:
+            meterchunk.fillna(0, inplace=True)
+            ix = val_mainchunk.index.intersection(meterchunk.index)
+            val_mainchunk = val_mainchunk[ix]
+        val_mainchunk = np.array(val_mainchunk)
+        for i, meterchunk in enumerate(val_meterchunks):
+            val_meterchunks[i] = np.array(meterchunk[ix])
 
         # truncate dataset if necessary
         if val_mainchunk.shape[0] % SEQUENCE_LENGTH != 0:
             length = int(val_mainchunk.shape[0] / SEQUENCE_LENGTH) * SEQUENCE_LENGTH
             val_mainchunk = val_mainchunk[:length]
-            val_meterchunk = val_meterchunk[:length]
+            for i, meterchunk in enumerate(val_meterchunks):
+                val_meterchunks[i] = meterchunk[:length]
         val_mainchunk = np.reshape(val_mainchunk, (-1, SEQUENCE_LENGTH, 1))
-        val_meterchunk = np.reshape(val_meterchunk, (-1, SEQUENCE_LENGTH, 1))
+        for i, meterchunk in enumerate(val_meterchunks):
+            val_meterchunks[i] = np.reshape(meterchunk, (-1, SEQUENCE_LENGTH, 1))
 
         val_mainchunk = self._normalize(val_mainchunk)
-        val_meterchunk = self._normalize_targets(val_meterchunk)
+        val_meterchunks = self._normalize_targets(val_meterchunks)
+        val_meterchunks = np.dstack(val_meterchunks)
 
-        history = self.model.fit(train_mainchunk, train_meterchunk, epochs=epochs, batch_size=batch_size, shuffle=True)
+        history = self.model.fit(train_mainchunk, train_meterchunks, epochs=epochs, batch_size=batch_size, shuffle=True)
         self.update_logfile(self.train_logfile, history.history['loss'], self.total_epochs)
         self.total_epochs += epochs
 
-        loss = self.model.evaluate(val_mainchunk, val_meterchunk, batch_size=batch_size)
+        loss = self.model.evaluate(val_mainchunk, val_meterchunks, batch_size=batch_size)
         self.update_logfile(self.val_logfile, [loss], self.total_epochs-1)
 
     def train_across_buildings(self, train_mainlist, train_meterlist, val_mainlist, val_meterlist, epochs=1,
@@ -215,7 +243,7 @@ class RNNDisaggregator(Disaggregator):
             val_mainchunks[i] = next(val_mainps[i])
             val_meterchunks[i] = next(val_meterps[i])
         if self.mmax is None:
-            self.mmax = max([m.max() for m in train_meterchunks]) # comment
+            self.mmax = max([m.max() for m in train_meterchunks])
 
         run = True
         while run:
@@ -324,7 +352,7 @@ class RNNDisaggregator(Disaggregator):
         loss = self.model.evaluate(val_mainchunk, val_meterchunk, batch_size=batch_size)
         self.update_logfile(self.val_logfile, [loss], self.total_epochs - 1)
 
-    def disaggregate(self, mains, output_datastore, results_file, meter_metadata, **load_kwargs):
+    def disaggregate(self, mains, output_datastore, results_file, meters_metadata, **load_kwargs):
         """
         Disaggregate mains according to the model learnt previously.
 
@@ -332,7 +360,7 @@ class RNNDisaggregator(Disaggregator):
         :param output_datastore: Instance of nilmtk.DataStore subclass for storing power predictions from disaggregation
             algorithm.
         :param results_file: Output text file.
-        :param meter_metadata: nilmtk.ElecMeter of the observed meter used for storing the metadata.
+        :param meters_metadata: List of nilmtk.ElecMeter of the observed meters used for storing the metadata.
         :param load_kwargs: Keyword arguments passed to mains.power_series(**kwargs)
         """
 
@@ -373,12 +401,13 @@ class RNNDisaggregator(Disaggregator):
             # append prediction to output
             data_is_available = True
             cols = pd.MultiIndex.from_tuples([chunk.name])
-            meter_instance = meter_metadata.instance()
-            df = pd.DataFrame(
-                appliance_power.values, index=appliance_power.index,
-                columns=cols, dtype="float32")
-            key = '{}/elec/meter{}'.format(building_path, meter_instance)
-            output_datastore.append(key, df)
+            for i, md in enumerate(meters_metadata):
+                meter_instance = md.instance()
+                df = pd.DataFrame(
+                    appliance_power[i].values, index=appliance_power[i].index,
+                    columns=cols, dtype="float32")
+                key = '{}/elec/meter{}'.format(building_path, meter_instance)
+                output_datastore.append(key, df)
 
             # append aggregate data to output
             mains_df = pd.DataFrame(chunk, columns=cols, dtype="float32")
@@ -392,7 +421,7 @@ class RNNDisaggregator(Disaggregator):
                 measurement=measurement,
                 timeframes=timeframes,
                 building=mains.building(),
-                meters=[meter_metadata]
+                meters=[meters_metadata]
             )
 
     def disaggregate_chunk(self, mains):
@@ -417,11 +446,14 @@ class RNNDisaggregator(Disaggregator):
             length = len(pred)
         else:
             length = pred.shape[0]
-        pred = np.reshape(pred, (length*SEQUENCE_LENGTH))
-        column = pd.Series(pred, index=mains.index[:(X_batch.shape[0]*SEQUENCE_LENGTH)], name=0)
+        pred = np.reshape(pred, (length*SEQUENCE_LENGTH, NUMBER_OF_TARGETS))
+        columns = []
+        for i in range(NUMBER_OF_TARGETS):
+            columns += [pd.Series(pred[:,i], index=mains.index[:(X_batch.shape[0]*SEQUENCE_LENGTH)], name=i)]
 
         appliance_powers_dict = {}
-        appliance_powers_dict[0] = column
+        for i in range(NUMBER_OF_TARGETS):
+            appliance_powers_dict[i] = columns[i]
         appliance_powers = pd.DataFrame(appliance_powers_dict)
         return appliance_powers
 
@@ -457,47 +489,59 @@ class RNNDisaggregator(Disaggregator):
             gr.create_dataset('std', data=[self.std])
             gr.create_dataset('total_epochs', data=[self.total_epochs])
 
-    def evaluate(self, test_mains, test_meter, batch_size=16, **load_kwargs):
+    def evaluate(self, test_mains, test_meters, batch_size=16, **load_kwargs):
         """
         Evaluate model.
 
         :param test_mains: nilmtk.ElecMeter object for the test aggregate data.
-        :param test_meter: nilmtk.ElecMeter object for the test meter data.
+        :param test_meters: List of nilmtk.ElecMeter objects for the test meter data.
         :param batch_size: Size of batch used for evaluation.
         :param load_kwargs: Keyword arguments passed to train_meter.power_series()
         :return:
         """
 
         test_main_power_series = test_mains.power_series(**load_kwargs)
-        test_meter_power_series = test_meter.power_series(**load_kwargs)
+        test_meter_power_series = []
+        for test_meter in test_meters:
+            test_meter_power_series += [test_meter.power_series(**load_kwargs)]
         test_mainchunk = next(test_main_power_series)
-        test_meterchunk = next(test_meter_power_series)
+        test_meterchunks = []
+        for power_series in test_meter_power_series:
+            test_meterchunks += [next(power_series)]
 
         run = True
         while run:
             # replace NaNs with 0s
             test_mainchunk.fillna(0, inplace=True)
-            test_meterchunk.fillna(0, inplace=True)
-            ix = test_mainchunk.index.intersection(test_meterchunk.index)
-            test_mainchunk = np.array(test_mainchunk[ix])
-            test_meterchunk = np.array(test_meterchunk[ix])
+            for meterchunk in test_meterchunks:
+                meterchunk.fillna(0, inplace=True)
+                ix = test_mainchunk.index.intersection(meterchunk.index)
+                test_mainchunk = test_mainchunk[ix]
+            test_mainchunk = np.array(test_mainchunk)
+            for i, meterchunk in enumerate(test_meterchunks):
+                test_meterchunks[i] = np.array(meterchunk[ix])
 
             # truncate dataset if necessary
             if test_mainchunk.shape[0] % SEQUENCE_LENGTH != 0:
                 length = int(test_mainchunk.shape[0] / SEQUENCE_LENGTH) * SEQUENCE_LENGTH
                 test_mainchunk = test_mainchunk[:length]
-                test_meterchunk = test_meterchunk[:length]
+                for i, meterchunk in enumerate(test_meterchunks):
+                    test_meterchunks[i] = meterchunk[:length]
             test_mainchunk = np.reshape(test_mainchunk, (-1, SEQUENCE_LENGTH, 1))
-            test_meterchunk = np.reshape(test_meterchunk, (-1, SEQUENCE_LENGTH, 1))
+            for i, meterchunk in enumerate(test_meterchunks):
+                test_meterchunks[i] = np.reshape(meterchunk, (-1, SEQUENCE_LENGTH, 1))
 
             test_mainchunk = self._normalize(test_mainchunk)
-            test_meterchunk = self._normalize_targets(test_meterchunk)
+            test_meterchunks = self._normalize_targets(test_meterchunks)
+            test_meterchunks = np.dstack(test_meterchunks)
 
-            loss = self.model.evaluate(test_mainchunk, test_meterchunk, batch_size=batch_size)
+            loss = self.model.evaluate(test_mainchunk, test_meterchunks, batch_size=batch_size)
             try:
                 # TODO: make this right!
                 test_mainchunk = next(test_main_power_series)
-                test_meterchunk = next(test_meter_power_series)
+                test_meterchunks = []
+                for power_series in test_meter_power_series:
+                    test_meterchunks += [next(power_series)]
                 print('THERE ARE MORE CHUNKS')
             except:
                 run = False
@@ -519,28 +563,29 @@ class RNNDisaggregator(Disaggregator):
         chunk /= self.std
         return chunk
 
-    def _normalize_targets(self, chunk):
+    def _normalize_targets(self, chunks):
         """
-        Normalizes the target power demand into the range [0,1].
+        Normalizes the targets power demand into the range [0,1].
 
-        :param chunk: The timeseries to normalize.
+        :param chunks: The timeseries to normalize.
         :return: Normalized timeseries.
         """
+        for i, meterchunk in enumerate(chunks):
+            chunks[i] = meterchunk / self.mmax[i]
+        return chunks
 
-        tchunk = chunk / self.mmax
-        return tchunk
-
-    def _denormalize_targets(self, chunk):
+    def _denormalize_targets(self, chunks):
         """
-        Denormalizes the target power demand into their original range.
+        Denormalizes the targets power demand into their original range.
         Note: This is not entirely correct.
 
-        :param chunk: The timeseries to denormalize.
+        :param chunks: The timeseries to denormalize.
         :return: Denormalized timeseries.
         """
 
-        tchunk = chunk * self.mmax
-        return tchunk
+        for i, meterchunk in enumerate(chunks):
+            chunks[i] = chunks[i] * self.mmax[i]
+        return chunks
 
     @staticmethod
     def _create_model(learning_rate):
@@ -566,7 +611,7 @@ class RNNDisaggregator(Disaggregator):
 
         # Fully Connected Layers
         model.add(TimeDistributed(Dense(128, activation='tanh')))
-        model.add(TimeDistributed(Dense(1, activation='linear')))
+        model.add(TimeDistributed(Dense(NUMBER_OF_TARGETS, activation='linear')))
 
         adam = Adam(lr=learning_rate)
         model.compile(loss='mse', optimizer=adam)
