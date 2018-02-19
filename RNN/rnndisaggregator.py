@@ -421,7 +421,7 @@ class RNNDisaggregator(Disaggregator):
                 measurement=measurement,
                 timeframes=timeframes,
                 building=mains.building(),
-                meters=[meters_metadata]
+                meters=meters_metadata
             )
 
     def disaggregate_chunk(self, mains):
@@ -567,7 +567,7 @@ class RNNDisaggregator(Disaggregator):
         """
         Normalizes the targets power demand into the range [0,1].
 
-        :param chunks: The timeseries to normalize.
+        :param chunks: The timeseries to normalize (list of numpy arrays).
         :return: Normalized timeseries.
         """
         for i, meterchunk in enumerate(chunks):
@@ -579,7 +579,7 @@ class RNNDisaggregator(Disaggregator):
         Denormalizes the targets power demand into their original range.
         Note: This is not entirely correct.
 
-        :param chunks: The timeseries to denormalize.
+        :param chunks: The timeseries to denormalize (DataFrame).
         :return: Denormalized timeseries.
         """
 
