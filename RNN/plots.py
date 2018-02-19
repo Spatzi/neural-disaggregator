@@ -312,7 +312,10 @@ def plot_datasets_meter():
     plt.savefig('datasets.png')
 
 
-def plot_zoomed_predicted_energy_consumption():
+def plot_zoomed_new_predicted_energy_consumption():
+    """
+    New prediction.
+    """
     train = DataSet('../data/ukdale.h5')
     train.clear_cache()
     train.set_window(start="2-1-2014", end="15-5-2014")
@@ -373,8 +376,53 @@ def plot_zoomed_predicted_energy_consumption():
     ax1.set_title('Appliance: {}'.format(meter_key))
     # plt.xticks(np.arange(0,x2.shape[0]+1,90), ('15-9-2013 15:30', '15:40', '15:50', '16:00', '16:10', '16:20'))
     fig.legend()
-    fig.savefig(os.path.join(results_dir, 'zoomed_predicted_vs_ground_truth.png'))
+    fig.savefig(os.path.join(results_dir, 'zoomed_new_predicted_vs_ground_truth.png'))
+
+
+def plot_zoomed_original_predicted_energy_consumption():
+    """
+    Original prediction.
+    """
+    test = DataSet('../data/ukdale.h5')
+    test.clear_cache()
+    test.set_window(start='29-9-2013', end='10-10-2013')
+
+    test_building = 2
+    sample_period = 6
+    meter_key = 'dish washer'
+
+    test_elec = test.buildings[test_building].elec
+
+    results_dir = '../results/UKDALE-RNN-lr=1e-05-2018-02-16-12-29-50'
+    disag_filename = 'disag-out.h5'
+
+    # get predicted curve for the best epoch
+    result = DataSet(os.path.join(results_dir, disag_filename))
+    res_elec = result.buildings[test_building].elec
+    predicted = res_elec[meter_key]
+    predicted = predicted.power_series(sample_period=sample_period)
+    predicted = next(predicted)
+    predicted.fillna(0, inplace=True)
+    y1 = np.array(predicted)  # power
+    x1 = np.arange(y1.shape[0])  # timestamps
+
+    ground_truth = test_elec[meter_key]
+    ground_truth = ground_truth.power_series(sample_period=sample_period)
+    ground_truth = next(ground_truth)
+    ground_truth.fillna(0, inplace=True)
+    y2 = np.array(ground_truth)  # power
+    x2 = np.arange(y2.shape[0])  # timestamps
+
+    fig, (ax1, ax2, ax3) = plt.subplots(3, sharex=True, sharey=True)
+    ax1.plot(x1, y1, color='r', label='predicted')
+    ax1.plot(x2, y2, color='b', label='ground truth')
+    ax2.plot(x1, y1, color='r')
+    ax3.plot(x2, y2, color='b')
+    ax1.set_title('Appliance: {}'.format(meter_key))
+    # plt.xticks(np.arange(0,x2.shape[0]+1,90), ('15-9-2013 15:30', '15:40', '15:50', '16:00', '16:10', '16:20'))
+    fig.legend()
+    fig.savefig(os.path.join(results_dir, 'zoomed_original_predicted_vs_ground_truth.png'))
 
 
 if __name__ == "__main__":
-    plot_datasets_meter()
+    plot_zoomed_original_predicted_energy_consumption()
