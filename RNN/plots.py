@@ -266,7 +266,7 @@ def plot_datasets_meter():
     windows = {
         'train': [["13-4-2013", "31-7-2013"]],
         'validation': ["31-7-2013", "31-8-2013"],
-        'test': ["7-1-2014", "20-10-2014"]
+        'test': ["31-8-2013", "15-9-2013"]
     }
 
     train = []
@@ -285,9 +285,9 @@ def plot_datasets_meter():
 
     train_buildings = [1]
     val_buildings = [1]
-    test_building = 5
+    test_building = 1
     sample_period = 6
-    meter_key = 'dish washer'
+    meter_key = 'microwave'
 
     train_meterlist = []
     val_meterlist = []
@@ -379,4 +379,4 @@ def plot_zoomed_predicted_energy_consumption():
 
 
 if __name__ == "__main__":
-    plot_zoomed_predicted_energy_consumption()
+    plot_datasets_meter()
