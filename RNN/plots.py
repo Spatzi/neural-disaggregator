@@ -264,9 +264,9 @@ def plot_datasets_meter():
     # }
 
     windows = {
-        'train': [["13-4-2013", "31-7-2013"]],
-        'validation': ["31-7-2013", "31-8-2013"],
-        'test': ["31-8-2013", "15-9-2013"]
+        'train': [["13-4-2013", "30-9-2013"]], #1
+        'validation': ["13-4-2013", "31-7-2013"], #2
+        'test': ["6-1-2014", "11-1-2014"] #5
     }
 
     train = []
@@ -284,8 +284,8 @@ def plot_datasets_meter():
     test.set_window(start=windows['test'][0], end=windows['test'][1])
 
     train_buildings = [1]
-    val_buildings = [1]
-    test_building = 1
+    val_buildings = [2]
+    test_building = 5
     sample_period = 6
     meter_key = 'microwave'
 
