@@ -15,10 +15,10 @@ from plots import plot_loss
 IMPORT = False  # TODO: True if continue training
 
 windows = {
-    'train': [['13-4-2013', '13-6-2013'], ['13-6-2013', '31-7-2013']],
-    'validation': ['13-5-2013', '13-6-2013'],
-    'test': ['15-7-2014', '30-7-2014']
-}
+        'train': [["13-4-2013", "20-4-2013"], ["13-4-2013", "20-4-2013"]],
+        'validation': ["20-4-2013", "22-4-2013"],
+        'test': ["22-4-2013", "23-4-2013"]
+    }
 
 # windows = {
 #     'train': ['13-4-2013', '31-7-2013'],
@@ -45,11 +45,11 @@ train_mainslist = []
 train_meterlist = []
 val_mainslist = []
 val_meterlist = []
-train_buildings = [1,2]
-val_buildings = [4]
-test_building = 5
+train_buildings = [1,1]
+val_buildings = [1,1]
+test_building = 1
 sample_period = 6
-meter_key = 'kettle'
+meter_keys = ['kettle', 'microwave']
 learning_rate = 1e-5
 
 if IMPORT:
@@ -69,28 +69,34 @@ with open(results_file, "w") as text_file:
     text_file.write('train buildings: {}\n'.format(train_buildings))
     text_file.write('validation buildings: {}\n'.format(val_buildings))
     text_file.write('test building: {}\n'.format(test_building))
-    text_file.write('appliance: {}\n'.format(meter_key))
+    text_file.write('appliance: {}\n'.format(meter_keys))
     text_file.write('sample period: {}\n'.format(sample_period))
     text_file.write('learning rate: {}\n'.format(learning_rate))
 
 for i, b in enumerate(train_buildings):
     train_elec = train[i].buildings[b].elec
-    train_meter = train_elec.submeters()[meter_key]
+    train_meters = []
+    for key in meter_keys:
+        train_meters += [train_elec.submeters()[key]]
     train_mains = train_elec.mains()
 
     train_mainslist += [train_mains]
-    train_meterlist += [train_meter]
+    train_meterlist += [train_meters]
 
 for i in val_buildings:
     val_elec = validation.buildings[i].elec
-    val_meter = val_elec.submeters()[meter_key]
+    validation_meters = []
+    for key in meter_keys:
+        validation_meters += [val_elec.submeters()[key]]
     val_mains = val_elec.mains()
 
     val_mainslist += [val_mains]
-    val_meterlist += [val_meter]
+    val_meterlist += [validation_meters]
 
 test_elec = test.buildings[test_building].elec
-test_meter = test_elec.submeters()[meter_key]
+test_meters = []
+for key in meter_keys:
+    test_meters += [test_elec.submeters()[key]]
 test_mains = test_elec.mains()
 
 train_logfile = os.path.join(results_dir, 'training.log')
@@ -105,11 +111,11 @@ else:
 start = time.time()
 print("========== TRAIN ============")
 epochs = 0  # TODO: update according to the last model if IMPORT = True
-for i in range(10):
-    rnn.train_across_buildings(train_mainslist, train_meterlist, val_mainslist, val_meterlist, epochs=10,
+for i in range(1):
+    rnn.train_across_buildings(train_mainslist, train_meterlist, val_mainslist, val_meterlist, epochs=1,
                                sample_period=sample_period)
-    epochs += 10
-    rnn.export_model(os.path.join(results_dir, "UKDALE-RNN-{}-{}epochs.h5".format(meter_key, epochs)))
+    epochs += 1
+    rnn.export_model(os.path.join(results_dir, "UKDALE-RNN-{}-{}epochs.h5".format(meter_keys, epochs)))
     plot_loss(train_logfile, val_logfile, results_dir)
     print("CHECKPOINT {}".format(epochs))
 end = time.time()
@@ -126,8 +132,8 @@ epochs = np.array(validation.as_matrix()[:,0], dtype='int')
 loss = np.array(validation.as_matrix()[:,1], dtype='float32')
 argmin = np.argmin(loss)
 best_epoch = epochs[argmin] + 1
-rnn.import_model(os.path.join(results_dir, "UKDALE-RNN-{}-{}epochs.h5".format(meter_key, best_epoch)))
-test_loss = rnn.evaluate(test_mains, test_meter, sample_period=sample_period)
+rnn.import_model(os.path.join(results_dir, "UKDALE-RNN-{}-{}epochs.h5".format(meter_keys, best_epoch)))
+test_loss = rnn.evaluate(test_mains, test_meters, sample_period=sample_period)
 line = 'Test loss: {}'.format(test_loss)
 with open(results_file, "a") as text_file:
     text_file.write(line + '\n')
@@ -145,13 +151,14 @@ plot_loss(train_logfile, val_logfile, results_dir, best_epoch, test_loss)
 # plot predicted energy consumption
 result = DataSet(os.path.join(results_dir, disag_filename))
 res_elec = result.buildings[test_building].elec
-predicted = res_elec[meter_key]
-ground_truth = test_elec[meter_key]
-fig, (ax1, ax2, ax3) = plt.subplots(3, sharex=True, sharey=True)
-predicted.plot(ax=ax1, plot_kwargs={'color': 'r', 'label': 'predicted'})
-ground_truth.plot(ax=ax1, plot_kwargs={'color': 'b', 'label': 'ground truth'})
-predicted.plot(ax=ax2, plot_kwargs={'color': 'r', 'label': 'predicted'}, plot_legend=False)
-ground_truth.plot(ax=ax3, plot_kwargs={'color': 'b', 'label': 'ground truth'}, plot_legend=False)
-ax1.set_title('Appliance: {}'.format(meter_key))
-fig.legend()
-fig.savefig(os.path.join(results_dir, 'predicted_vs_ground_truth.png'))
+for key in meter_keys:
+    predicted = res_elec[key]
+    ground_truth = test_elec[key]
+    fig, (ax1, ax2, ax3) = plt.subplots(3, sharex=True, sharey=True)
+    predicted.plot(ax=ax1, plot_kwargs={'color': 'r', 'label': 'predicted'})
+    ground_truth.plot(ax=ax1, plot_kwargs={'color': 'b', 'label': 'ground truth'})
+    predicted.plot(ax=ax2, plot_kwargs={'color': 'r', 'label': 'predicted'}, plot_legend=False)
+    ground_truth.plot(ax=ax3, plot_kwargs={'color': 'b', 'label': 'ground truth'}, plot_legend=False)
+    ax1.set_title('Appliance: {}'.format(key))
+    fig.legend()
+    fig.savefig(os.path.join(results_dir, 'predicted_vs_ground_truth_{}.png'.format(key)))
