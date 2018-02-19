@@ -15,9 +15,9 @@ from plots import plot_loss
 IMPORT = False  # TODO: True if continue training
 
 windows = {
-    'train': [['13-4-2013', '31-7-2013'], ['13-4-2013', '31-7-2013']],
-    'validation': ['13-4-2013', '13-6-2013'],
-    'test': ['30-6-2014', '30-7-2014']
+    'train': [['13-4-2013', '13-6-2013'], ['13-6-2013', '31-7-2013']],
+    'validation': ['13-5-2013', '13-6-2013'],
+    'test': ['15-7-2014', '30-7-2014']
 }
 
 # windows = {
