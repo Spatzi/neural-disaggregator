@@ -15,7 +15,7 @@ from plots import plot_loss
 IMPORT = False  # TODO: True if continue training
 
 windows = {
-    'train': [['2-1-2014', '15-5-2014'], ['30-3-2013', '15-7-2013']],
+    'train': [['13-4-2013', '31-7-2013'], ['13-4-2013', '31-7-2013']],
     'validation': ['13-4-2013', '13-6-2013'],
     'test': ['30-6-2014', '30-7-2014']
 }
@@ -49,7 +49,7 @@ train_buildings = [1,2]
 val_buildings = [4]
 test_building = 5
 sample_period = 6
-meter_key = 'fridge'
+meter_key = 'kettle'
 learning_rate = 1e-5
 
 if IMPORT:
@@ -61,6 +61,7 @@ else:
 results_file = os.path.join(results_dir, 'results.txt')
 with open(results_file, "w") as text_file:
     text_file.write('========== PARAMETERS ============' + '\n')
+    text_file.write('USE SLIDING WINDOW' + '\n')
     for window in windows['train']:
         text_file.write('train window: ({}, {})\n'.format(window[0], window[1]))
     text_file.write('validation window: ({}, {})\n'.format(windows['validation'][0], windows['validation'][1]))
@@ -104,7 +105,7 @@ else:
 start = time.time()
 print("========== TRAIN ============")
 epochs = 0  # TODO: update according to the last model if IMPORT = True
-for i in range(30):
+for i in range(10):
     rnn.train_across_buildings(train_mainslist, train_meterlist, val_mainslist, val_meterlist, epochs=10,
                                sample_period=sample_period)
     epochs += 10
