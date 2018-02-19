@@ -277,7 +277,7 @@ class RNNDisaggregator(Disaggregator):
         idx = rng.choice(idx, len(idx), replace=False)
         train_mainchunk, train_meterchunk = all_train_mainchunks[idx], all_train_meterchunks[idx]
 
-        batch_size = int(train_mainchunk.shape[0] / 50)
+        batch_size = int(train_mainchunk.shape[0] / 100)
 
         if self.std is None:
             rand_idx = random.randint(0, train_mainchunk.shape[0]-1)
