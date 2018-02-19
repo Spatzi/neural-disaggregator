@@ -405,8 +405,8 @@ def plot_zoomed_original_predicted_energy_consumption():
     predicted.fillna(0, inplace=True)
     y1 = np.array(predicted)  # power
     x1 = np.arange(y1.shape[0])  # timestamps
-    # x1 = x1[94000:102500]
-    # y1 = y1[94000:102500]
+    x1 = x1[94000:102500]
+    y1 = y1[94000:102500]
 
     ground_truth = test_elec[meter_key]
     ground_truth = ground_truth.power_series(sample_period=sample_period)
@@ -414,8 +414,8 @@ def plot_zoomed_original_predicted_energy_consumption():
     ground_truth.fillna(0, inplace=True)
     y2 = np.array(ground_truth)  # power
     x2 = np.arange(y2.shape[0])  # timestamps
-    # x2 = x2[94000:102500]
-    # y2 = y2[94000:102500]
+    x2 = x2[94000:102500]
+    y2 = y2[94000:102500]
 
     fig, (ax1, ax2, ax3) = plt.subplots(3, sharex=True, sharey=True)
     ax1.plot(x1, y1, color='r', label='predicted')
@@ -423,7 +423,7 @@ def plot_zoomed_original_predicted_energy_consumption():
     ax2.plot(x1, y1, color='r')
     ax3.plot(x2, y2, color='b')
     ax1.set_title('Appliance: {}'.format(meter_key))
-    # plt.xticks(np.arange(0,x2.shape[0]+1,90), ('15-9-2013 15:30', '15:40', '15:50', '16:00', '16:10', '16:20'))
+    plt.xticks(np.arange(0,x2.shape[0]+1,2000), ('5-10-2013 12:00', '16:00', '20:00', '6-10-2013 00:00', '04:00'))
     fig.legend()
     fig.savefig(os.path.join(results_dir, '_zoomed_original_predicted_vs_ground_truth.png'))
 
