@@ -47,7 +47,7 @@ val_mainslist = []
 val_meterlist = []
 train_buildings = [1,2]
 val_buildings = [1,2]
-test_building = 5
+test_building = 2
 sample_period = 6
 meter_keys = ['kettle', 'microwave']
 learning_rate = 1e-5
@@ -131,8 +131,7 @@ validation = pd.read_csv(val_logfile)
 epochs = np.array(validation.as_matrix()[:,0], dtype='int')
 loss = np.array(validation.as_matrix()[:,1], dtype='float32')
 argmin = np.argmin(loss)
-# best_epoch = epochs[argmin] + 1
-best_epoch = 100
+best_epoch = epochs[argmin] + 1
 rnn.import_model(os.path.join(results_dir, "UKDALE-RNN-{}-{}epochs.h5".format(meter_keys, best_epoch)))
 test_loss = rnn.evaluate(test_mains, test_meters, sample_period=sample_period)
 line = 'Test loss: {}'.format(test_loss)
