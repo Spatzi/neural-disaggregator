@@ -17,7 +17,7 @@ IMPORT = True  # TODO: True if continue training
 windows = {
     'train': [['13-4-2013', '13-6-2013'], ['13-6-2013', '31-7-2013']],
     'validation': ['13-5-2013', '13-6-2013'],
-    'test': ['7-7-2014', '21-7-2014']
+    'test': ['13-6-2013', '30-6-2013']
 }
 
 # windows = {
@@ -47,7 +47,7 @@ val_mainslist = []
 val_meterlist = []
 train_buildings = [1,2]
 val_buildings = [4]
-test_building = 5
+test_building = 4
 sample_period = 6
 meter_key = 'kettle'
 learning_rate = 1e-5
