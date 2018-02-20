@@ -17,7 +17,7 @@ IMPORT = True  # TODO: True if continue training
 windows = {
         'train': [["13-4-2013", "6-7-2013"], ["13-4-2013", "6-7-2013"]],
         'validation': ["6-7-2013", "21-6-2013"],
-        'test': ["24-10-2014", "31-10-2014"]
+        'test': ["15-6-2014", "22-6-2014"]
     }
 
 # windows = {
