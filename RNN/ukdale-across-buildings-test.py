@@ -131,7 +131,8 @@ validation = pd.read_csv(val_logfile)
 epochs = np.array(validation.as_matrix()[:,0], dtype='int')
 loss = np.array(validation.as_matrix()[:,1], dtype='float32')
 argmin = np.argmin(loss)
-best_epoch = epochs[argmin] + 1
+# best_epoch = epochs[argmin] + 1
+best_epoch = 100
 rnn.import_model(os.path.join(results_dir, "UKDALE-RNN-{}-{}epochs.h5".format(meter_keys, best_epoch)))
 test_loss = rnn.evaluate(test_mains, test_meters, sample_period=sample_period)
 line = 'Test loss: {}'.format(test_loss)
