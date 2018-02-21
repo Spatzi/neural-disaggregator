@@ -12,7 +12,7 @@ from rnndisaggregator import RNNDisaggregator
 from plots import plot_loss
 
 
-IMPORT = False  # TODO: True if continue training
+IMPORT = True  # TODO: True if continue training
 
 windows = {
     'train': [['13-4-2013', '13-5-2013'], ['13-6-2013', '13-7-2013'], ['13-5-2013', '13-6-2013'],
@@ -59,7 +59,7 @@ meter_key = 'kettle'
 learning_rate = 1e-5
 
 if IMPORT:
-    results_dir = '../results/UKDALE-ACROSS-BUILDINGS-RNN-lr=1e-05-2018-02-19-11-43-47'  # TODO: insert directory name
+    results_dir = '../results/UKDALE-ACROSS-BUILDINGS-RNN-lr=1e-05-2018-02-20-14-24-46'  # TODO: insert directory name
 else:
     results_dir = '../results/UKDALE-ACROSS-BUILDINGS-RNN-lr={}-{}'.format(learning_rate,
                                                                            datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
@@ -111,8 +111,8 @@ else:
 
 start = time.time()
 print("========== TRAIN ============")
-epochs = 0  # TODO: update according to the last model if IMPORT = True
-for i in range(15):
+epochs = 150  # TODO: update according to the last model if IMPORT = True
+for i in range(0):
     rnn.train_across_buildings(train_mainslist, train_meterlist, val_mainslist, val_meterlist, epochs=10,
                                sample_period=sample_period)
     epochs += 10
@@ -132,7 +132,8 @@ validation = pd.read_csv(val_logfile)
 epochs = np.array(validation.as_matrix()[:,0], dtype='int')
 loss = np.array(validation.as_matrix()[:,1], dtype='float32')
 argmin = np.argmin(loss)
-best_epoch = epochs[argmin] + 1
+# best_epoch = epochs[argmin] + 1
+best_epoch = 150
 rnn.import_model(os.path.join(results_dir, "UKDALE-RNN-{}-{}epochs.h5".format(meter_key, best_epoch)))
 test_loss = rnn.evaluate(test_mains, test_meter, sample_period=sample_period)
 line = 'Test loss: {}'.format(test_loss)
