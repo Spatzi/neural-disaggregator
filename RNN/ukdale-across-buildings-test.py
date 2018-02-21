@@ -112,7 +112,7 @@ else:
 start = time.time()
 print("========== TRAIN ============")
 epochs = 200  # TODO: update according to the last model if IMPORT = True
-for i in range(0):
+for i in range(5):
     rnn.train_across_buildings(train_mainslist, train_meterlist, val_mainslist, val_meterlist, epochs=10,
                                sample_period=sample_period)
     epochs += 10
