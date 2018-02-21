@@ -387,15 +387,15 @@ def plot_zoomed_original_predicted_energy_consumption():
     """
     test = DataSet('../data/ukdale.h5')
     test.clear_cache()
-    test.set_window(start="13-6-2013", end="30-6-2013")
+    test.set_window(start="31-7-2014", end="15-8-2014")
 
-    test_building = 1
+    test_building = 5
     sample_period = 6
     meter_keys = ['kettle']
 
     test_elec = test.buildings[test_building].elec
 
-    results_dir = '../results/UKDALE-ACROSS-BUILDINGS-RNN-lr=1e-05-2018-02-19-11-43-47'
+    results_dir = '../results/UKDALE-ACROSS-BUILDINGS-RNN-lr=1e-05-2018-02-20-14-24-46'
     disag_filename = 'disag-out.h5'
 
     for key in meter_keys:
