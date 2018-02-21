@@ -395,7 +395,7 @@ def plot_zoomed_original_predicted_energy_consumption():
 
     test_elec = test.buildings[test_building].elec
 
-    results_dir = '../results/UKDALE-RNN-lr=1e-5-2018-01-26-2014:33:59'
+    results_dir = '../results/UKDALE-RNN-lr=1e-5-2018-01-26-14:33:59'
     disag_filename = 'disag-out.h5'
 
     for key in meter_keys:
