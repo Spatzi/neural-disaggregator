@@ -19,8 +19,7 @@ windows = {
               ['13-7-2014', '31-7-2014']],
     'validation': [['13-5-2013', '20-5-2013'], ['13-7-2013', '20-7-2013'], ['13-4-2013', '20-4-2013'],
                    ['7-6-2014', '13-7-2014']],
-    # 'test': ['30-6-2013', '15-7-2013']
-    'test': ['13-4-2013', '30-4-2013']
+    'test': ['30-6-2013', '15-7-2013']
 }
 
 # windows = {
@@ -54,7 +53,7 @@ val_mainslist = []
 val_meterlist = []
 train_buildings = [1,2,4,5]
 val_buildings = [1,2,4,5]
-test_building = 2
+test_building = 1
 sample_period = 6
 meter_key = 'kettle'
 learning_rate = 1e-5
@@ -113,7 +112,7 @@ else:
 start = time.time()
 print("========== TRAIN ============")
 epochs = 150  # TODO: update according to the last model if IMPORT = True
-for i in range(0):
+for i in range(5):
     rnn.train_across_buildings(train_mainslist, train_meterlist, val_mainslist, val_meterlist, epochs=10,
                                sample_period=sample_period)
     epochs += 10
@@ -133,8 +132,7 @@ validation = pd.read_csv(val_logfile)
 epochs = np.array(validation.as_matrix()[:,0], dtype='int')
 loss = np.array(validation.as_matrix()[:,1], dtype='float32')
 argmin = np.argmin(loss)
-# best_epoch = epochs[argmin] + 1
-best_epoch = 150
+best_epoch = epochs[argmin] + 1
 rnn.import_model(os.path.join(results_dir, "UKDALE-RNN-{}-{}epochs.h5".format(meter_key, best_epoch)))
 test_loss = rnn.evaluate(test_mains, test_meter, sample_period=sample_period)
 line = 'Test loss: {}'.format(test_loss)
