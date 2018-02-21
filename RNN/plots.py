@@ -387,9 +387,9 @@ def plot_zoomed_original_predicted_energy_consumption():
     """
     test = DataSet('../data/ukdale.h5')
     test.clear_cache()
-    test.set_window(start="31-7-2014", end="15-8-2014")
+    test.set_window(start="30-6-2013", end="15-7-2013")
 
-    test_building = 5
+    test_building = 1
     sample_period = 6
     meter_keys = ['kettle']
 
