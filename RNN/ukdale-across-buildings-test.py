@@ -12,12 +12,12 @@ from rnndisaggregator import RNNDisaggregator
 from plots import plot_loss
 
 
-IMPORT = True  # TODO: True if continue training
+IMPORT = False  # TODO: True if continue training
 
 windows = {
     'train': [["13-4-2013", "31-7-2013"], ["21-5-2013", "9-1-2013"]],
     'validation': [["31-7-2013", "31-8-2013"], ["9-1-2013", "29-9-2013"]],
-    'test': ["29-9-2013", "10-10-2013"]
+    'test': ["15-7-2014", "15-8-2014"]
 }
 
 # windows = {
@@ -52,13 +52,13 @@ val_mainslist = []
 val_meterlist = []
 train_buildings = [1,2]
 val_buildings = [1,2]
-test_building = 2
+test_building = 5
 sample_period = 6
 meter_key = 'dish washer'
 learning_rate = 1e-5
 
 if IMPORT:
-    results_dir = '../results/UKDALE-ACROSS-BUILDINGS-RNN-lr=1e-05-2018-02-17-11-19-47'  # TODO: insert directory name
+    results_dir = '../results/UKDALE-ACROSS-BUILDINGS-RNN-lr=1e-05-2018-02-03-11-48-12'  # TODO: insert directory name
 else:
     results_dir = '../results/UKDALE-ACROSS-BUILDINGS-RNN-lr={}-{}'.format(learning_rate,
                                                                            datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
@@ -103,14 +103,14 @@ val_logfile = os.path.join(results_dir, 'validation.log')
 
 if IMPORT:
     rnn = RNNDisaggregator(train_logfile, val_logfile, learning_rate, init=False)
-    rnn.import_model(os.path.join(results_dir, "UKDALE-RNN-dish washer-300epochs.h5"))  # TODO: insert last model name
+    rnn.import_model(os.path.join(results_dir, "UKDALE-RNN-kettle-300epochs.h5"))  # TODO: insert last model name
 else:
     rnn = RNNDisaggregator(train_logfile, val_logfile, learning_rate)
 
 start = time.time()
 print("========== TRAIN ============")
-epochs = 300  # TODO: update according to the last model if IMPORT = True
-for i in range(0):
+epochs = 0  # TODO: update according to the last model if IMPORT = True
+for i in range(30):
     rnn.train_across_buildings(train_mainslist, train_meterlist, val_mainslist, val_meterlist, epochs=10,
                                sample_period=sample_period)
     epochs += 10
