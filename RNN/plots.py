@@ -387,15 +387,15 @@ def plot_zoomed_original_predicted_energy_consumption():
     """
     test = DataSet('../data/ukdale.h5')
     test.clear_cache()
-    test.set_window(start="30-6-2014", end="31-7-2014")
+    test.set_window(start="15-6-2014", end="30-6-2014")
 
-    test_building = 5
+    test_building = 1
     sample_period = 6
-    meter_keys = ['kettle']
+    meter_keys = ['fridge']
 
     test_elec = test.buildings[test_building].elec
 
-    results_dir = '../results/UKDALE-ACROSS-BUILDINGS-RNN-lr=1e-05-2018-02-03-11-48-12'
+    results_dir = '../results/UKDALE-RNN-lr=1e-05-2018-01-28-12-01-34'
     disag_filename = 'disag-out.h5'
 
     for key in meter_keys:
@@ -426,7 +426,7 @@ def plot_zoomed_original_predicted_energy_consumption():
         ax2.plot(x1, y1, color='r')
         ax3.plot(x2, y2, color='b')
         ax1.set_title('Appliance: {}'.format(key))
-        plt.xticks(np.arange(0,400001,100000), ('30-6-2014', '7-7-2014', '14-7-2014', '21-7-2014', '28-7-2014'))
+        # plt.xticks(np.arange(0,400001,100000), ('30-6-2014', '7-7-2014', '14-7-2014', '21-7-2014', '28-7-2014'))
         fig.legend()
         fig.savefig(os.path.join(results_dir, 'zoomed_original_predicted_vs_ground_truth_{}.png'.format(key)))
 
