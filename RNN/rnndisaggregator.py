@@ -21,7 +21,7 @@ OVERLAPPING = 0.8
 
 class RNNDisaggregator(Disaggregator):
     """
-    Attempt to create a RNN Disaggregator.
+    Attempt to create an RNN Disaggregator.
 
     Attributes
     ----------
@@ -108,7 +108,7 @@ class RNNDisaggregator(Disaggregator):
         Series lengths (for sample_period = 6):
         --------------
         kettle => 128
-        dish washer => 1536
+        dish washer => 1024
         fridge => 512
         """
 
@@ -215,7 +215,7 @@ class RNNDisaggregator(Disaggregator):
             val_mainchunks[i] = next(val_mainps[i])
             val_meterchunks[i] = next(val_meterps[i])
         if self.mmax is None:
-            self.mmax = max([m.max() for m in train_meterchunks]) # comment
+            self.mmax = max([m.max() for m in train_meterchunks])
 
         run = True
         while run:
@@ -343,9 +343,6 @@ class RNNDisaggregator(Disaggregator):
 
         timeframes = []
         building_path = '/building{}'.format(mains.building())
-
-        # ROTEM
-        # bugfix - it was considering meter1 by default.
 
         main_meter = mains.instance()
         if isinstance(main_meter, tuple):  # if a tuple pick the first item (for printing purposes only)
@@ -523,7 +520,7 @@ class RNNDisaggregator(Disaggregator):
         """
         Normalizes the target power demand into the range [0,1].
 
-        :param chunk: The timeseries to normalize.
+        :param chunk: The timeseries to normalize (numpy array).
         :return: Normalized timeseries.
         """
 
@@ -535,7 +532,7 @@ class RNNDisaggregator(Disaggregator):
         Denormalizes the target power demand into their original range.
         Note: This is not entirely correct.
 
-        :param chunk: The timeseries to denormalize.
+        :param chunk: The timeseries to denormalize (DataFrame).
         :return: Denormalized timeseries.
         """
 
