@@ -7,3 +7,7 @@ The architecture is based on [Neural NILM: Deep Neural Networks Applied to Energ
 The implemented model is a Recurrent network with LSTM neurons as mentioned in [Neural NILM](https://arxiv.org/pdf/1507.06594.pdf),
 extended by adding units to the convolutional and recurrent layers and by using dropout.
 Further extension is the simultaneous disaggregation of more than one appliance.
+
+To start training use ukdale-test.py or ukdale-across-buildings-test.py and provide the parameters:
+- Select the time frames as well as buildings for the training, validation and test sets.
+- Select the sample_period (in secs), meter_keys (= target appliances) and learning_rate.
