@@ -22,7 +22,7 @@ NUMBER_OF_TARGETS = 2
 
 class RNNDisaggregator(Disaggregator):
     """
-    Attempt to create a RNN Disaggregator.
+    Attempt to create an RNN Disaggregator.
 
     Attributes
     ----------
