@@ -13,7 +13,7 @@ from rnndisaggregator import RNNDisaggregator
 from plots import plot_loss
 
 
-IMPORT = True
+IMPORT = False  # TODO: True if continue training
 
 windows = {
         'train': ["13-4-2013", "20-4-2013"],
@@ -84,11 +84,11 @@ else:
     rnn = RNNDisaggregator(train_logfile, val_logfile, learning_rate)
 
 print("========== TRAIN ============")
-epochs = 0  # TODO: update according to the last model if IMPORT = True
+epochs = 0  # TODO: update according to the last model if IMPORT is True
 start = time.time()
-for i in range(0):
-    rnn.train(train_mains, train_meters, validation_mains, validation_meters, epochs=1, sample_period=sample_period)
-    epochs += 1
+for i in range(30):
+    rnn.train(train_mains, train_meters, validation_mains, validation_meters, epochs=10, sample_period=sample_period)
+    epochs += 10
     rnn.export_model(os.path.join(results_dir, "UKDALE-RNN-{}-{}epochs.h5".format(meter_keys, epochs)))
     plot_loss(train_logfile, val_logfile, results_dir)
     print("CHECKPOINT {}".format(epochs))

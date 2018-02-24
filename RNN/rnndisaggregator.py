@@ -120,9 +120,9 @@ class RNNDisaggregator(Disaggregator):
 
         """
         Series lengths (for sample_period = 6):
-        --------------
+        --------------------------------------
         kettle => 128
-        dish washer => 1536
+        dish washer => 1024
         fridge => 512
         """
 
@@ -415,9 +415,6 @@ class RNNDisaggregator(Disaggregator):
 
         timeframes = []
         building_path = '/building{}'.format(mains.building())
-
-        # ROTEM
-        # bugfix - it was considering meter1 by default.
 
         main_meter = mains.instance()
         if isinstance(main_meter, tuple):  # if a tuple pick the first item (for printing purposes only)

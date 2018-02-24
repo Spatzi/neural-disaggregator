@@ -12,19 +12,13 @@ from rnndisaggregator import RNNDisaggregator
 from plots import plot_loss
 
 
-IMPORT = True  # TODO: True if continue training
+IMPORT = False  # TODO: True if continue training
 
 windows = {
         'train': [["13-4-2013", "6-7-2013"], ["13-4-2013", "6-7-2013"]],
         'validation': ["6-7-2013", "21-6-2013"],
         'test': ["6-7-2013", "21-6-2013"]
     }
-
-# windows = {
-#     'train': ['13-4-2013', '31-7-2013'],
-#     'validation': ['13-4-2013', '13-6-2013'],
-#     'test': ['13-9-2013', '30-9-2013']
-# }
 
 train = []
 print("========== OPEN DATASETS ============")
@@ -110,8 +104,8 @@ else:
 
 start = time.time()
 print("========== TRAIN ============")
-epochs = 100  # TODO: update according to the last model if IMPORT = True
-for i in range(0):
+epochs = 0  # TODO: update according to the last model if IMPORT = True
+for i in range(30):
     rnn.train_across_buildings(train_mainslist, train_meterlist, val_mainslist, val_meterlist, epochs=10,
                                sample_period=sample_period)
     epochs += 10
