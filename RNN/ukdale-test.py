@@ -47,7 +47,6 @@ else:
 results_file = os.path.join(results_dir, 'results.txt')
 with open(results_file, "w") as text_file:
     text_file.write('========== PARAMETERS ============' + '\n')
-    text_file.write('USE SLIDING WINDOW' + '\n')
     text_file.write('train window: ({}, {})\n'.format(windows['train'][0], windows['train'][1]))
     text_file.write('validation window: ({}, {})\n'.format(windows['validation'][0], windows['validation'][1]))
     text_file.write('test window: ({}, {})\n'.format(windows['test'][0], windows['test'][1]))
